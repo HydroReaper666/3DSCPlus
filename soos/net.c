@@ -11,10 +11,10 @@ static saddrsize = sizeof(struct sockaddr_in);
 
 int preparesock(int port)
 {
-    puts("socket()");
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock < 0)
     {
+        puts("socket()");
         sock = 0;
         return errno;
     }
@@ -25,10 +25,10 @@ int preparesock(int port)
     sai.sin_family = sao.sin_family = AF_INET;
     sai.sin_port = sao.sin_port = htons(port);
     
-    puts("bind()");
     int ret = bind(sock, &sai, sizeof(sai));
     if(ret < 0)
     {
+        puts("bind()");
         close(sock);
         sock = 0;
         return errno;
@@ -49,9 +49,9 @@ int recvbuf(int length)
     return recvfrom(sock, inbuf, length, 0, &sao, &saddrsize);
 }
 
-int handshake()
+int handshake(int cmd)
 {
-    outbuf->hdr.cmd = CONNECT;
+    outbuf->hdr.cmd = cmd;
     outbuf->hdr.altcmd = 0;
     return sendbuf(offsetof(struct packet, conn) + sizeof(struct packet_conn));
 }

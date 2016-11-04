@@ -77,5 +77,5 @@ extern struct packet *inbuf, *outbuf;
 int preparesock(int port);
 int sendbuf(int length);
 int recvbuf(int length);
-int handshake();
+int handshake(int cmd);
 int sendinput(u8 altcmd, u32 keys, touchPosition touch, circlePosition cpad, circlePosition cstick);

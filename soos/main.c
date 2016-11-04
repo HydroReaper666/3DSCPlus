@@ -79,7 +79,8 @@ int main()
   PrintConsole console;
   u32 timer = 0;
   u32 altkey = 0;
-  
+  u16 port = 6956;
+  int connectd = 0;
   int altmode = 0;
   
   // =====[PREINIT]=====
@@ -87,26 +88,44 @@ int main()
   consoleInit(GFX_TOP, &console);
   consoleSelect(&console);
   
-  puts("Console attached");
-  
   fbTopLeft = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
   fbTopRight = gfxGetFramebuffer(GFX_TOP, GFX_RIGHT, NULL, NULL);
   fbBottom = gfxGetFramebuffer(GFX_BOTTOM, 0, NULL, NULL);
   
-  printf("socInit %08X\n", socInit(memalign(0x1000, 0x100000), 0x100000));
+  ret = socInit(memalign(0x1000, 0x100000), 0x100000);
+  if(ret < 0)
+  {
+      printf("socInit %08X\n", ret);
+      hangmacro();
+  }
   
   wait4wifi();
   
   sai.sin_addr.s_addr = INADDR_ANY;//inet_pton4("10.0.0.103", &sao.sin_addr.s_addr);
   sao.sin_addr.s_addr = INADDR_ANY;
-  ret = preparesock(6956);
-  printf("preparesock %08X\n", ret);
-  if(ret) hangmacro();
+  ret = preparesock(port);
+  if(ret)
+  {
+      printf("preparesock: %i\n", ret);
+      hangmacro();
+  }
   
-  puts("Waiting for initial connection...");
+  consoleClear();
+  
+  reloop:
+  
+  wait4wifi();
+  
+  do
+  {
+      char buf[256];
+      gethostname(buf, sizeof(buf));
+      printf("Listening on %s:%i\n", buf, port);
+  }
+  while(0);
   
   // =====[RUN]=====
-  reloop:
+  
   while (aptMainLoop())
   {
     hidScanInput();
@@ -144,6 +163,8 @@ int main()
                 consoleClear();
                 screenon();
                 timer = 120;
+                connectd = 1;
+                handshake(CONNECT);
                 break;
             }
             case DISCONNECT:
@@ -156,8 +177,10 @@ int main()
                 
                 timer = 0;
                 screenon();
-                puts("dc'd");
-                break;
+                consoleClear();
+                puts("Disconnected");
+                connectd = 0;
+                goto reloop;
             }
             case SCREENSHOT:
             {
@@ -179,9 +202,9 @@ int main()
     irrstCstickRead(&cstick);
     hidTouchRead(&touch);
     
-    if(timer && !--timer && !altmode) screenoff();
+    if(connectd && timer && !--timer && !altmode) screenoff();
     
-    if(altkey && (kHeld & altkey) == altkey)
+    if(connectd && altkey && (kHeld & altkey) == altkey)
     {
         if(!altmode)
         {
@@ -205,7 +228,7 @@ int main()
         if(!ret) puts("sendinput == 0");
         if(errno == EAFNOSUPPORT)
         {
-            //no-op, never connected
+            
         }
         else
         {
@@ -224,6 +247,8 @@ int main()
   // =====[END]=====
   
   killswitch:
+  
+  handshake(DISCONNECT);
   
   screenon();
   

@@ -140,7 +140,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -rf $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(TARGET).cia
+	@rm -rf $(BUILD) $(OUTPUT).elf $(TARGET)-stripped.elf $(OUTPUT).cia
 
 
 #---------------------------------------------------------------------------------
@@ -153,10 +153,8 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 ifeq ($(strip $(NO_SMDH)),)
 .PHONY: all
-all	:	$(OUTPUT).3dsx $(OUTPUT).smdh $(OUTPUT).cia
-endif 
-
-$(OUTPUT).3dsx	:	$(OUTPUT).elf
+all	:	$(OUTPUT).cia
+endif
 
 $(OUTPUT).elf	:	$(OFILES)
 
