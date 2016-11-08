@@ -13,6 +13,27 @@ namespace MarcusD._3DSCPlusDummy
         [DllImport("user32.dll")]
         public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
+        public static byte[] struct2byte<T>(T wat) where T : struct
+        {
+            byte[] buf = new byte[Marshal.SizeOf(typeof(T))];
+            IntPtr ptr = Marshal.AllocHGlobal(buf.Length);
+            Marshal.StructureToPtr(wat, ptr, true);
+            Marshal.Copy(ptr, buf, 0, buf.Length);
+            Marshal.FreeHGlobal(ptr);
+            return buf;
+        }
+
+        public static T byte2struct<T>(byte[] wat) where T : struct
+        {
+            T t = new T();
+            int size = Marshal.SizeOf(typeof(T));
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.Copy(wat, 0, ptr, size);
+            t = (T)Marshal.PtrToStructure(ptr, typeof(T));
+            Marshal.FreeHGlobal(ptr);
+            return t;
+        }
+
         public const int SCROLL_DELTA = 120;
 
         [Flags]

@@ -34,7 +34,7 @@ using System.Runtime.InteropServices;
 
         int currspeed = 1;
 
-        public Keybinding[] bindings = new Keybinding[32 * 2];
+        public Keybinding[] bindings = new Keybinding[32];
 
         public class Keybinding
         {
@@ -89,7 +89,6 @@ using System.Runtime.InteropServices;
             public List<Event> eheld;
 
             public Button btn;
-            public Label lbl;
             public int nth;
 
             public Keybinding()
@@ -316,14 +315,13 @@ using System.Runtime.InteropServices;
             }
         }
 
-        public void SetKeybind(Button btn, Label lbl, int nth, IEnumerable<Event> edown, IEnumerable<Event> eup, IEnumerable<Event> eheld)
+        public void SetKeybind(Button btn, int nth, IEnumerable<Event> edown, IEnumerable<Event> eup, IEnumerable<Event> eheld)
         {
             if(nth < 0 || nth > 31) return;
 
             bindings[nth] = new Keybinding()
             {
                 btn = btn,
-                lbl = lbl,
                 nth = nth
             };
 

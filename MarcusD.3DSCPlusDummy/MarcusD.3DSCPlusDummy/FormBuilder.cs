@@ -93,8 +93,37 @@ namespace MarcusD._3DSCPlusDummy
             switch(tabEvtsel.SelectedIndex)
             {
                 case 1: //mouse
-                    //TODO mouse buttons
-                    curr.Add(new Dummy.Keybinding.Event() { evt = (checkAbsmov.Checked ? Dummy.Keybinding.Simutype.MABS : Dummy.Keybinding.Simutype.MREL), mousex = (short)numMouseX.Value, mousey = (short)numMouseY.Value });
+                    switch(tabMouseEvent.SelectedIndex)
+                    {
+                        case 0: //move
+                            curr.Add(new Dummy.Keybinding.Event() { evt = (checkAbsmov.Checked ? Dummy.Keybinding.Simutype.MABS : Dummy.Keybinding.Simutype.MREL), mousex = (short)numMouseX.Value, mousey = (short)numMouseY.Value });
+                            break;
+                        case 1: //button
+                            if(!checkMBLD.Checked && !checkMBLU.Checked && !checkMBMD.Checked && !checkMBMU.Checked && !checkMBRD.Checked && !checkMBRU.Checked) break;
+                            curr.Add
+                            (
+                                new Dummy.Keybinding.Event()
+                                {
+                                    evt = Dummy.Keybinding.Simutype.MEVT,
+                                    mouseflags =
+                                        (checkMBLD.Checked ? NativeInput.MouseEventFlags.LDOWN : (NativeInput.MouseEventFlags)0) |
+                                        (checkMBLU.Checked ? NativeInput.MouseEventFlags.LUP : (NativeInput.MouseEventFlags)0) |
+                                        (checkMBMD.Checked ? NativeInput.MouseEventFlags.MDOWN : (NativeInput.MouseEventFlags)0) |
+                                        (checkMBMU.Checked ? NativeInput.MouseEventFlags.MUP : (NativeInput.MouseEventFlags)0) |
+                                        (checkMBRD.Checked ? NativeInput.MouseEventFlags.RDOWN : (NativeInput.MouseEventFlags)0) |
+                                        (checkMBRU.Checked ? NativeInput.MouseEventFlags.RUP : (NativeInput.MouseEventFlags)0),
+                                    mousepos = 0
+                                }
+                            );
+                            break;
+                        case 2: //XButton
+                            if(!checkXButtonDown.Checked && !checkXButtonUp.Checked) break;
+                            curr.Add(new Dummy.Keybinding.Event() { evt = Dummy.Keybinding.Simutype.MEVT, mouseflags = (checkXButtonUp.Checked ? NativeInput.MouseEventFlags.XUP : (NativeInput.MouseEventFlags)0) | (checkXButtonDown.Checked ? NativeInput.MouseEventFlags.XDOWN : (NativeInput.MouseEventFlags)0), mousepos = (int)numXButtonN.Value });
+                            break;
+                        case 3: //scroll
+                            curr.Add(new Dummy.Keybinding.Event() { evt = Dummy.Keybinding.Simutype.MEVT, mouseflags = NativeInput.MouseEventFlags.SCROLL | (checkScrollH.Checked ? NativeInput.MouseEventFlags.SCROLLH : (NativeInput.MouseEventFlags)0), mousepos = (int)numScrollN.Value });
+                            break;
+                    }
                     break;
 
                 case 2: //mouse speed
@@ -103,6 +132,11 @@ namespace MarcusD._3DSCPlusDummy
 
                 default: break; //nope
             }
+        }
+
+        private void tabEvtevt_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if(tabEvtevt.SelectedIndex == 0) ItemRefresh();
         }
     }
 }
