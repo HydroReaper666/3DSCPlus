@@ -1,0 +1,3 @@
+!*.exe
+*vshost*
+/3dsp.bin
