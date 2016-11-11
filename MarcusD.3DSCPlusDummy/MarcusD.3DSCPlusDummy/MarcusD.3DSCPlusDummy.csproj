@@ -62,6 +62,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Dummy.cs" />
+    <Compile Include="FormAltedit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormAltedit.Designer.cs">
+      <DependentUpon>FormAltedit.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormBuilder.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -77,6 +83,9 @@
     <Compile Include="NativeInput.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="FormAltedit.resx">
+      <DependentUpon>FormAltedit.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FormBuilder.resx">
       <DependentUpon>FormBuilder.cs</DependentUpon>
     </EmbeddedResource>

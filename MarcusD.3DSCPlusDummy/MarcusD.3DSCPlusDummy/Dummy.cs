@@ -13,6 +13,8 @@ namespace MarcusD._3DSCPlusDummy
     using System.Net;
     using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Drawing;
+    using System.IO;
 
     public class Dummy
     {
@@ -26,6 +28,8 @@ using System.Runtime.InteropServices;
         public String ipaddr = "10.0.0.101";
         public UInt16 port = 6956;
 
+        public byte[] imgbuf = null;
+
         int polltimeout = 3 * 1000 * 1000;
         int altkey = 1 << 11;
         Boolean dcexit = false;
@@ -35,6 +39,31 @@ using System.Runtime.InteropServices;
         int currspeed = 1;
 
         public Keybinding[] bindings = new Keybinding[32];
+        public List<RektButton> rekts = new List<RektButton>();
+
+        RektButton currekt = null;
+
+        public class RektButton
+        {
+            public Rectangle rekt;
+            public Dummy.Keybinding kb;
+
+            public void Export(FileStream fs)
+            {
+                byte[] b = NativeInput.struct2byte(rekt);
+                fs.Write(b, 0, b.Length);
+                kb.Export(fs);
+            }
+
+            public void Import(FileStream fs)
+            {
+                byte[] buf = new byte[System.Runtime.InteropServices.Marshal.SizeOf(typeof(Rectangle))];
+                fs.Read(buf, 0, buf.Length);
+                rekt = NativeInput.byte2struct<Rectangle>(buf);
+                kb = new Keybinding();
+                kb.Import(fs);
+            }
+        }
 
         public class Keybinding
         {
@@ -91,6 +120,60 @@ using System.Runtime.InteropServices;
             public Button btn;
             public int nth;
 
+            public void Export(FileStream fs)
+            {
+                fs.WriteByte((byte)edown.Count);
+                foreach(Dummy.Keybinding.Event ev in edown)
+                {
+                    byte[] buf = NativeInput.struct2byte(ev);
+                    fs.Write(buf, 0, buf.Length);
+                }
+
+                fs.WriteByte((byte)eup.Count);
+                foreach(Dummy.Keybinding.Event ev in eup)
+                {
+                    byte[] buf = NativeInput.struct2byte(ev);
+                    fs.Write(buf, 0, buf.Length);
+                }
+
+                fs.WriteByte((byte)eheld.Count);
+                foreach(Dummy.Keybinding.Event ev in eheld)
+                {
+                    byte[] buf = NativeInput.struct2byte(ev);
+                    fs.Write(buf, 0, buf.Length);
+                }
+            }
+
+            public void Import(FileStream fs)
+            {
+                byte[] buf = new byte[System.Runtime.InteropServices.Marshal.SizeOf(typeof(Dummy.Keybinding.Event))];
+
+                edown.Clear();
+                eup.Clear();
+                eheld.Clear();
+
+                byte cnt = (byte)fs.ReadByte();
+                for(int i = 0; i != cnt; i++)
+                {
+                    fs.Read(buf, 0, buf.Length);
+                    edown.Add(NativeInput.byte2struct<Dummy.Keybinding.Event>(buf));
+                }
+
+                cnt = (byte)fs.ReadByte();
+                for(int i = 0; i != cnt; i++)
+                {
+                    fs.Read(buf, 0, buf.Length);
+                    eup.Add(NativeInput.byte2struct<Dummy.Keybinding.Event>(buf));
+                }
+
+                cnt = (byte)fs.ReadByte();
+                for(int i = 0; i != cnt; i++)
+                {
+                    fs.Read(buf, 0, buf.Length);
+                    eheld.Add(NativeInput.byte2struct<Dummy.Keybinding.Event>(buf));
+                }
+            }
+
             public Keybinding()
             {
                 edown = new List<Event>();
@@ -121,6 +204,43 @@ using System.Runtime.InteropServices;
 
             while(running)
             {
+                if(imgbuf != null)
+                {
+                    int offs = 0;
+                    int boffs = 0;
+                    int mustread = imgbuf.Length;
+                    int remain;
+
+                    while(mustread > 0)
+                    {
+                        remain = Math.Min(mustread, 240 * 3 * 4);
+
+                        obuf.Clear();
+                        obuf.Add(3); //PacketID (SCREENSHOT)
+                        obuf.Add(0); //altkey (dummy)
+                        obuf.Add(0); //padding1
+                        obuf.Add(0); //padding2
+                        obuf.Add((byte)(offs & 0xFF)); //offs1
+                        obuf.Add((byte)((offs >> 8) & 0xFF)); //offs2
+
+                        //too inefficient, but works /shrug
+                        int i = 0;
+                        while(i != remain)
+                        {
+                            obuf.Add(imgbuf[boffs + i++]);
+                        }
+
+                        boffs += remain;
+                        mustread -= remain;
+                        offs++;
+
+                        sock.SendTo(obuf.ToArray(), sockaddr_in);
+                        if(mustread > 0) System.Threading.Thread.Sleep(20);
+                    }
+
+                    imgbuf = null;
+                }
+
                 if(!sock.Poll(timeout, SelectMode.SelectRead))
                 {
                     if(connected)
@@ -218,6 +338,20 @@ using System.Runtime.InteropServices;
                         {
                             px = tx;
                             py = ty;
+
+                            if(altcmd != 0)
+                            {
+                                Rectangle cur = new Rectangle(tx, ty, 1, 1);
+                                foreach(Dummy.RektButton rekt in rekts)
+                                {
+                                    if(rekt.rekt.IntersectsWith(cur))
+                                    {
+                                        currekt = rekt;
+                                        ProcessKDown(currekt.kb);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                         else if((kheld & (1 << 20)) != 0) //KEY_TOUCH
                         {
@@ -225,11 +359,19 @@ using System.Runtime.InteropServices;
 
                             px = tx;
                             py = ty;
+
+                            if(currekt != null) ProcessKHeld(currekt.kb);
                         }
-                        else if((kdown & (1 << 20)) != 0) //KEY_TOUCH
+                        else if((kup & (1 << 20)) != 0) //KEY_TOUCH
                         {
                             px = 0;
                             py = 0;
+
+                            if(currekt != null)
+                            {
+                                ProcessKUp(currekt.kb);
+                                currekt = null;
+                            }
                         }
 
                         //TODO config option

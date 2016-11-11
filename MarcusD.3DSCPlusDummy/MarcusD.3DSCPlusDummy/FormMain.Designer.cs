@@ -445,6 +445,7 @@
             this.MaximizeBox = false;
             this.Name = "FormMain";
             this.Text = "3DSController Plus Dummy";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMain_FormClosing);
             this.Load += new System.EventHandler(this.FormMain_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numPort)).EndInit();
             this.ResumeLayout(false);

@@ -138,5 +138,27 @@ namespace MarcusD._3DSCPlusDummy
         {
             if(tabEvtevt.SelectedIndex == 0) ItemRefresh();
         }
+
+        private void btnKeyAuto_Click(object sender, EventArgs e)
+        {
+            if(listKeys.SelectedIndex == -1) return;
+
+            curr.Add(new Dummy.Keybinding.Event() { evt = Dummy.Keybinding.Simutype.KDOWN, k = (NativeInput.KeyScan)listKeys.SelectedItem });
+            curr.Add(new Dummy.Keybinding.Event() { evt = Dummy.Keybinding.Simutype.KUP, k = (NativeInput.KeyScan)listKeys.SelectedItem });
+        }
+
+        private void btnKeyPress_Click(object sender, EventArgs e)
+        {
+            if(listKeys.SelectedIndex == -1) return;
+
+            curr.Add(new Dummy.Keybinding.Event() { evt = Dummy.Keybinding.Simutype.KDOWN, k = (NativeInput.KeyScan)listKeys.SelectedItem });
+        }
+
+        private void btnKeyRel_Click(object sender, EventArgs e)
+        {
+            if(listKeys.SelectedIndex == -1) return;
+
+            curr.Add(new Dummy.Keybinding.Event() { evt = Dummy.Keybinding.Simutype.KUP, k = (NativeInput.KeyScan)listKeys.SelectedItem });
+        }
     }
 }

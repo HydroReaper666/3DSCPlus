@@ -31,8 +31,8 @@ namespace MarcusD._3DSCPlusDummy
             dmy.SetKeybind(btnRebindDL, i++, null, null, null);
             dmy.SetKeybind(btnRebindDU, i++, null, null, null);
             dmy.SetKeybind(btnRebindDD, i++, null, null, null);
-            dmy.SetKeybind(btnRebindL, i++, null, null, null);
             dmy.SetKeybind(btnRebindR, i++, null, null, null);
+            dmy.SetKeybind(btnRebindL, i++, null, null, null);
             dmy.SetKeybind(btnRebindX, i++, null, null, null);
             dmy.SetKeybind(btnRebindY, i++, null, null, null);
 
@@ -81,30 +81,17 @@ namespace MarcusD._3DSCPlusDummy
                 {
                     if(kb == null) continue;
                     fs.WriteByte((byte)kb.nth);
-
-                    fs.WriteByte((byte)kb.edown.Count);
-                    foreach(Dummy.Keybinding.Event ev in kb.edown)
-                    {
-                        byte[] buf = NativeInput.struct2byte(ev);
-                        fs.Write(buf, 0, buf.Length);
-                    }
-
-                    fs.WriteByte((byte)kb.eup.Count);
-                    foreach(Dummy.Keybinding.Event ev in kb.eup)
-                    {
-                        byte[] buf = NativeInput.struct2byte(ev);
-                        fs.Write(buf, 0, buf.Length);
-                    }
-
-                    fs.WriteByte((byte)kb.eheld.Count);
-                    foreach(Dummy.Keybinding.Event ev in kb.eheld)
-                    {
-                        byte[] buf = NativeInput.struct2byte(ev);
-                        fs.Write(buf, 0, buf.Length);
-                    }
+                    kb.Export(fs);
                 }
 
                 fs.WriteByte(0xFF);
+
+                fs.WriteByte((byte)dmy.rekts.Count);
+                foreach(Dummy.RektButton rb in dmy.rekts)
+                {
+                    if(rb == null) continue;
+                    rb.Export(fs);
+                }
             }
         }
 
@@ -113,35 +100,25 @@ namespace MarcusD._3DSCPlusDummy
             if(!File.Exists(path)) return;
             using(FileStream fs = File.OpenRead(path))
             {
-                byte[] buf = new byte[System.Runtime.InteropServices.Marshal.SizeOf(typeof(Dummy.Keybinding.Event))];
-
                 while(true)
                 {
                     byte nth = (byte)fs.ReadByte();
                     if(nth == 0xFF) break;
 
                     Dummy.Keybinding kb = dmy.bindings[nth];
+                    kb.Import(fs);
+                }
 
-                    byte cnt = (byte)fs.ReadByte();
-                    for(int i = 0; i != cnt; i++)
-                    {
-                        fs.Read(buf, 0, buf.Length);
-                        kb.edown.Add(NativeInput.byte2struct<Dummy.Keybinding.Event>(buf));
-                    }
+                dmy.rekts.Clear();
 
-                    cnt = (byte)fs.ReadByte();
-                    for(int i = 0; i != cnt; i++)
-                    {
-                        fs.Read(buf, 0, buf.Length);
-                        kb.eup.Add(NativeInput.byte2struct<Dummy.Keybinding.Event>(buf));
-                    }
-
-                    cnt = (byte)fs.ReadByte();
-                    for(int i = 0; i != cnt; i++)
-                    {
-                        fs.Read(buf, 0, buf.Length);
-                        kb.eheld.Add(NativeInput.byte2struct<Dummy.Keybinding.Event>(buf));
-                    }
+                int i = fs.ReadByte();
+                
+                while(i > 0)
+                {
+                    Dummy.RektButton rb = new Dummy.RektButton();
+                    rb.Import(fs);
+                    dmy.rekts.Add(rb);
+                    i--;
                 }
             }
         }
@@ -153,7 +130,18 @@ namespace MarcusD._3DSCPlusDummy
 
         private void btnAltEditor_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Come back for the next commit ;)");
+            using(FormAltedit frm = new FormAltedit(dmy.rekts))
+            {
+                if(frm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    dmy.imgbuf = frm.imgbytes;
+                }
+            }
+        }
+
+        private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            checkConnect.Checked = false;
         }
     }
 }

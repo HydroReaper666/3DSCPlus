@@ -40,11 +40,30 @@
             this.btnKeyAuto = new System.Windows.Forms.Button();
             this.btnKeyRel = new System.Windows.Forms.Button();
             this.tabMouse = new System.Windows.Forms.TabPage();
+            this.tabMouseEvent = new System.Windows.Forms.TabControl();
+            this.tabMMove = new System.Windows.Forms.TabPage();
             this.numMouseY = new System.Windows.Forms.NumericUpDown();
+            this.checkAbsmov = new System.Windows.Forms.CheckBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.numMouseX = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
-            this.checkAbsmov = new System.Windows.Forms.CheckBox();
+            this.tabMButton = new System.Windows.Forms.TabPage();
+            this.checkMBMU = new System.Windows.Forms.CheckBox();
+            this.checkMBRU = new System.Windows.Forms.CheckBox();
+            this.checkMBLU = new System.Windows.Forms.CheckBox();
+            this.checkMBMD = new System.Windows.Forms.CheckBox();
+            this.checkMBRD = new System.Windows.Forms.CheckBox();
+            this.checkMBLD = new System.Windows.Forms.CheckBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.tabMXbutton = new System.Windows.Forms.TabPage();
+            this.numXButtonN = new System.Windows.Forms.NumericUpDown();
+            this.checkXButtonUp = new System.Windows.Forms.CheckBox();
+            this.checkXButtonDown = new System.Windows.Forms.CheckBox();
+            this.tabMScroll = new System.Windows.Forms.TabPage();
+            this.checkScrollH = new System.Windows.Forms.CheckBox();
+            this.numScrollN = new System.Windows.Forms.NumericUpDown();
             this.tabMspeed = new System.Windows.Forms.TabPage();
             this.numMspeed = new System.Windows.Forms.NumericUpDown();
             this.btnQueue = new System.Windows.Forms.Button();
@@ -52,25 +71,6 @@
             this.btnClear = new System.Windows.Forms.Button();
             this.panelLayoutDummy1 = new System.Windows.Forms.Panel();
             this.selType = new System.Windows.Forms.ComboBox();
-            this.tabMouseEvent = new System.Windows.Forms.TabControl();
-            this.tabMMove = new System.Windows.Forms.TabPage();
-            this.tabMButton = new System.Windows.Forms.TabPage();
-            this.tabMXbutton = new System.Windows.Forms.TabPage();
-            this.tabMScroll = new System.Windows.Forms.TabPage();
-            this.numScrollN = new System.Windows.Forms.NumericUpDown();
-            this.checkScrollH = new System.Windows.Forms.CheckBox();
-            this.checkXButtonDown = new System.Windows.Forms.CheckBox();
-            this.checkXButtonUp = new System.Windows.Forms.CheckBox();
-            this.numXButtonN = new System.Windows.Forms.NumericUpDown();
-            this.label3 = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
-            this.label5 = new System.Windows.Forms.Label();
-            this.checkMBLD = new System.Windows.Forms.CheckBox();
-            this.checkMBLU = new System.Windows.Forms.CheckBox();
-            this.checkMBRD = new System.Windows.Forms.CheckBox();
-            this.checkMBRU = new System.Windows.Forms.CheckBox();
-            this.checkMBMD = new System.Windows.Forms.CheckBox();
-            this.checkMBMU = new System.Windows.Forms.CheckBox();
             this.tabEvtevt.SuspendLayout();
             this.tabCurrevents.SuspendLayout();
             this.tabBuilder.SuspendLayout();
@@ -78,18 +78,18 @@
             this.tabKey.SuspendLayout();
             this.panelLayoutDummy2.SuspendLayout();
             this.tabMouse.SuspendLayout();
+            this.tabMouseEvent.SuspendLayout();
+            this.tabMMove.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numMouseY)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numMouseX)).BeginInit();
+            this.tabMButton.SuspendLayout();
+            this.tabMXbutton.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numXButtonN)).BeginInit();
+            this.tabMScroll.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numScrollN)).BeginInit();
             this.tabMspeed.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numMspeed)).BeginInit();
             this.panelLayoutDummy1.SuspendLayout();
-            this.tabMouseEvent.SuspendLayout();
-            this.tabMMove.SuspendLayout();
-            this.tabMButton.SuspendLayout();
-            this.tabMXbutton.SuspendLayout();
-            this.tabMScroll.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numScrollN)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numXButtonN)).BeginInit();
             this.SuspendLayout();
             // 
             // tabEvtevt
@@ -188,6 +188,7 @@
             this.btnKeyPress.TabIndex = 0;
             this.btnKeyPress.Text = "Press";
             this.btnKeyPress.UseVisualStyleBackColor = true;
+            this.btnKeyPress.Click += new System.EventHandler(this.btnKeyPress_Click);
             // 
             // btnKeyAuto
             // 
@@ -198,6 +199,7 @@
             this.btnKeyAuto.TabIndex = 3;
             this.btnKeyAuto.Text = "Autopress";
             this.btnKeyAuto.UseVisualStyleBackColor = true;
+            this.btnKeyAuto.Click += new System.EventHandler(this.btnKeyAuto_Click);
             // 
             // btnKeyRel
             // 
@@ -208,6 +210,7 @@
             this.btnKeyRel.TabIndex = 2;
             this.btnKeyRel.Text = "Release";
             this.btnKeyRel.UseVisualStyleBackColor = true;
+            this.btnKeyRel.Click += new System.EventHandler(this.btnKeyRel_Click);
             // 
             // tabMouse
             // 
@@ -218,6 +221,33 @@
             this.tabMouse.TabIndex = 1;
             this.tabMouse.Text = "Mouse";
             this.tabMouse.UseVisualStyleBackColor = true;
+            // 
+            // tabMouseEvent
+            // 
+            this.tabMouseEvent.Controls.Add(this.tabMMove);
+            this.tabMouseEvent.Controls.Add(this.tabMButton);
+            this.tabMouseEvent.Controls.Add(this.tabMXbutton);
+            this.tabMouseEvent.Controls.Add(this.tabMScroll);
+            this.tabMouseEvent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabMouseEvent.Location = new System.Drawing.Point(0, 0);
+            this.tabMouseEvent.Name = "tabMouseEvent";
+            this.tabMouseEvent.SelectedIndex = 0;
+            this.tabMouseEvent.Size = new System.Drawing.Size(268, 140);
+            this.tabMouseEvent.TabIndex = 3;
+            // 
+            // tabMMove
+            // 
+            this.tabMMove.Controls.Add(this.numMouseY);
+            this.tabMMove.Controls.Add(this.checkAbsmov);
+            this.tabMMove.Controls.Add(this.label1);
+            this.tabMMove.Controls.Add(this.numMouseX);
+            this.tabMMove.Controls.Add(this.label2);
+            this.tabMMove.Location = new System.Drawing.Point(4, 22);
+            this.tabMMove.Name = "tabMMove";
+            this.tabMMove.Size = new System.Drawing.Size(260, 114);
+            this.tabMMove.TabIndex = 0;
+            this.tabMMove.Text = "Move";
+            this.tabMMove.UseVisualStyleBackColor = true;
             // 
             // numMouseY
             // 
@@ -235,6 +265,28 @@
             this.numMouseY.Name = "numMouseY";
             this.numMouseY.Size = new System.Drawing.Size(56, 20);
             this.numMouseY.TabIndex = 2;
+            // 
+            // checkAbsmov
+            // 
+            this.checkAbsmov.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkAbsmov.AutoSize = true;
+            this.checkAbsmov.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.checkAbsmov.Location = new System.Drawing.Point(193, 5);
+            this.checkAbsmov.Name = "checkAbsmov";
+            this.checkAbsmov.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.checkAbsmov.Size = new System.Drawing.Size(64, 17);
+            this.checkAbsmov.TabIndex = 0;
+            this.checkAbsmov.Text = "Absolute";
+            this.checkAbsmov.UseVisualStyleBackColor = true;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(6, 4);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(17, 13);
+            this.label1.TabIndex = 1;
+            this.label1.Text = "X:";
             // 
             // numMouseX
             // 
@@ -262,27 +314,212 @@
             this.label2.TabIndex = 1;
             this.label2.Text = "Y:";
             // 
-            // label1
+            // tabMButton
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 4);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(17, 13);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "X:";
+            this.tabMButton.Controls.Add(this.checkMBMU);
+            this.tabMButton.Controls.Add(this.checkMBRU);
+            this.tabMButton.Controls.Add(this.checkMBLU);
+            this.tabMButton.Controls.Add(this.checkMBMD);
+            this.tabMButton.Controls.Add(this.checkMBRD);
+            this.tabMButton.Controls.Add(this.checkMBLD);
+            this.tabMButton.Controls.Add(this.label5);
+            this.tabMButton.Controls.Add(this.label4);
+            this.tabMButton.Controls.Add(this.label3);
+            this.tabMButton.Location = new System.Drawing.Point(4, 22);
+            this.tabMButton.Name = "tabMButton";
+            this.tabMButton.Size = new System.Drawing.Size(260, 114);
+            this.tabMButton.TabIndex = 1;
+            this.tabMButton.Text = "Button";
+            this.tabMButton.UseVisualStyleBackColor = true;
             // 
-            // checkAbsmov
+            // checkMBMU
             // 
-            this.checkAbsmov.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkAbsmov.AutoSize = true;
-            this.checkAbsmov.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.checkAbsmov.Location = new System.Drawing.Point(193, 5);
-            this.checkAbsmov.Name = "checkAbsmov";
-            this.checkAbsmov.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.checkAbsmov.Size = new System.Drawing.Size(64, 17);
-            this.checkAbsmov.TabIndex = 0;
-            this.checkAbsmov.Text = "Absolute";
-            this.checkAbsmov.UseVisualStyleBackColor = true;
+            this.checkMBMU.AutoSize = true;
+            this.checkMBMU.Location = new System.Drawing.Point(117, 48);
+            this.checkMBMU.Name = "checkMBMU";
+            this.checkMBMU.Size = new System.Drawing.Size(41, 17);
+            this.checkMBMU.TabIndex = 1;
+            this.checkMBMU.Text = "UP";
+            this.checkMBMU.UseVisualStyleBackColor = true;
+            // 
+            // checkMBRU
+            // 
+            this.checkMBRU.AutoSize = true;
+            this.checkMBRU.Location = new System.Drawing.Point(117, 26);
+            this.checkMBRU.Name = "checkMBRU";
+            this.checkMBRU.Size = new System.Drawing.Size(41, 17);
+            this.checkMBRU.TabIndex = 1;
+            this.checkMBRU.Text = "UP";
+            this.checkMBRU.UseVisualStyleBackColor = true;
+            // 
+            // checkMBLU
+            // 
+            this.checkMBLU.AutoSize = true;
+            this.checkMBLU.Location = new System.Drawing.Point(117, 3);
+            this.checkMBLU.Name = "checkMBLU";
+            this.checkMBLU.Size = new System.Drawing.Size(41, 17);
+            this.checkMBLU.TabIndex = 1;
+            this.checkMBLU.Text = "UP";
+            this.checkMBLU.UseVisualStyleBackColor = true;
+            // 
+            // checkMBMD
+            // 
+            this.checkMBMD.AutoSize = true;
+            this.checkMBMD.Location = new System.Drawing.Point(50, 48);
+            this.checkMBMD.Name = "checkMBMD";
+            this.checkMBMD.Size = new System.Drawing.Size(61, 17);
+            this.checkMBMD.TabIndex = 1;
+            this.checkMBMD.Text = "DOWN";
+            this.checkMBMD.UseVisualStyleBackColor = true;
+            // 
+            // checkMBRD
+            // 
+            this.checkMBRD.AutoSize = true;
+            this.checkMBRD.Location = new System.Drawing.Point(50, 26);
+            this.checkMBRD.Name = "checkMBRD";
+            this.checkMBRD.Size = new System.Drawing.Size(61, 17);
+            this.checkMBRD.TabIndex = 1;
+            this.checkMBRD.Text = "DOWN";
+            this.checkMBRD.UseVisualStyleBackColor = true;
+            // 
+            // checkMBLD
+            // 
+            this.checkMBLD.AutoSize = true;
+            this.checkMBLD.Location = new System.Drawing.Point(50, 3);
+            this.checkMBLD.Name = "checkMBLD";
+            this.checkMBLD.Size = new System.Drawing.Size(61, 17);
+            this.checkMBLD.TabIndex = 1;
+            this.checkMBLD.Text = "DOWN";
+            this.checkMBLD.UseVisualStyleBackColor = true;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(3, 49);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(41, 13);
+            this.label5.TabIndex = 0;
+            this.label5.Text = "Middle:";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(9, 27);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(35, 13);
+            this.label4.TabIndex = 0;
+            this.label4.Text = "Right:";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(16, 4);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(28, 13);
+            this.label3.TabIndex = 0;
+            this.label3.Text = "Left:";
+            // 
+            // tabMXbutton
+            // 
+            this.tabMXbutton.Controls.Add(this.numXButtonN);
+            this.tabMXbutton.Controls.Add(this.checkXButtonUp);
+            this.tabMXbutton.Controls.Add(this.checkXButtonDown);
+            this.tabMXbutton.Location = new System.Drawing.Point(4, 22);
+            this.tabMXbutton.Name = "tabMXbutton";
+            this.tabMXbutton.Size = new System.Drawing.Size(260, 114);
+            this.tabMXbutton.TabIndex = 2;
+            this.tabMXbutton.Text = "X button";
+            this.tabMXbutton.UseVisualStyleBackColor = true;
+            // 
+            // numXButtonN
+            // 
+            this.numXButtonN.Location = new System.Drawing.Point(3, 49);
+            this.numXButtonN.Maximum = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.numXButtonN.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numXButtonN.Name = "numXButtonN";
+            this.numXButtonN.Size = new System.Drawing.Size(254, 20);
+            this.numXButtonN.TabIndex = 1;
+            this.numXButtonN.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            // 
+            // checkXButtonUp
+            // 
+            this.checkXButtonUp.AutoSize = true;
+            this.checkXButtonUp.Location = new System.Drawing.Point(3, 26);
+            this.checkXButtonUp.Name = "checkXButtonUp";
+            this.checkXButtonUp.Size = new System.Drawing.Size(85, 17);
+            this.checkXButtonUp.TabIndex = 0;
+            this.checkXButtonUp.Text = "XButton_UP";
+            this.checkXButtonUp.UseVisualStyleBackColor = true;
+            // 
+            // checkXButtonDown
+            // 
+            this.checkXButtonDown.AutoSize = true;
+            this.checkXButtonDown.Location = new System.Drawing.Point(3, 3);
+            this.checkXButtonDown.Name = "checkXButtonDown";
+            this.checkXButtonDown.Size = new System.Drawing.Size(105, 17);
+            this.checkXButtonDown.TabIndex = 0;
+            this.checkXButtonDown.Text = "XButton_DOWN";
+            this.checkXButtonDown.UseVisualStyleBackColor = true;
+            // 
+            // tabMScroll
+            // 
+            this.tabMScroll.Controls.Add(this.checkScrollH);
+            this.tabMScroll.Controls.Add(this.numScrollN);
+            this.tabMScroll.Location = new System.Drawing.Point(4, 22);
+            this.tabMScroll.Name = "tabMScroll";
+            this.tabMScroll.Size = new System.Drawing.Size(260, 114);
+            this.tabMScroll.TabIndex = 3;
+            this.tabMScroll.Text = "Scroll";
+            this.tabMScroll.UseVisualStyleBackColor = true;
+            // 
+            // checkScrollH
+            // 
+            this.checkScrollH.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkScrollH.AutoSize = true;
+            this.checkScrollH.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.checkScrollH.Location = new System.Drawing.Point(187, 3);
+            this.checkScrollH.Name = "checkScrollH";
+            this.checkScrollH.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.checkScrollH.Size = new System.Drawing.Size(70, 17);
+            this.checkScrollH.TabIndex = 1;
+            this.checkScrollH.Text = "Horizontal";
+            this.checkScrollH.UseVisualStyleBackColor = true;
+            // 
+            // numScrollN
+            // 
+            this.numScrollN.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.numScrollN.Increment = new decimal(new int[] {
+            120,
+            0,
+            0,
+            0});
+            this.numScrollN.Location = new System.Drawing.Point(3, 3);
+            this.numScrollN.Maximum = new decimal(new int[] {
+            600,
+            0,
+            0,
+            0});
+            this.numScrollN.Minimum = new decimal(new int[] {
+            600,
+            0,
+            0,
+            -2147483648});
+            this.numScrollN.Name = "numScrollN";
+            this.numScrollN.Size = new System.Drawing.Size(178, 20);
+            this.numScrollN.TabIndex = 0;
             // 
             // tabMspeed
             // 
@@ -371,240 +608,6 @@
             this.selType.TabIndex = 4;
             this.selType.SelectedIndexChanged += new System.EventHandler(this.selType_SelectedIndexChanged);
             // 
-            // tabMouseEvent
-            // 
-            this.tabMouseEvent.Controls.Add(this.tabMMove);
-            this.tabMouseEvent.Controls.Add(this.tabMButton);
-            this.tabMouseEvent.Controls.Add(this.tabMXbutton);
-            this.tabMouseEvent.Controls.Add(this.tabMScroll);
-            this.tabMouseEvent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabMouseEvent.Location = new System.Drawing.Point(0, 0);
-            this.tabMouseEvent.Name = "tabMouseEvent";
-            this.tabMouseEvent.SelectedIndex = 0;
-            this.tabMouseEvent.Size = new System.Drawing.Size(268, 140);
-            this.tabMouseEvent.TabIndex = 3;
-            // 
-            // tabMMove
-            // 
-            this.tabMMove.Controls.Add(this.numMouseY);
-            this.tabMMove.Controls.Add(this.checkAbsmov);
-            this.tabMMove.Controls.Add(this.label1);
-            this.tabMMove.Controls.Add(this.numMouseX);
-            this.tabMMove.Controls.Add(this.label2);
-            this.tabMMove.Location = new System.Drawing.Point(4, 22);
-            this.tabMMove.Name = "tabMMove";
-            this.tabMMove.Size = new System.Drawing.Size(260, 114);
-            this.tabMMove.TabIndex = 0;
-            this.tabMMove.Text = "Move";
-            this.tabMMove.UseVisualStyleBackColor = true;
-            // 
-            // tabMButton
-            // 
-            this.tabMButton.Controls.Add(this.checkMBMU);
-            this.tabMButton.Controls.Add(this.checkMBRU);
-            this.tabMButton.Controls.Add(this.checkMBLU);
-            this.tabMButton.Controls.Add(this.checkMBMD);
-            this.tabMButton.Controls.Add(this.checkMBRD);
-            this.tabMButton.Controls.Add(this.checkMBLD);
-            this.tabMButton.Controls.Add(this.label5);
-            this.tabMButton.Controls.Add(this.label4);
-            this.tabMButton.Controls.Add(this.label3);
-            this.tabMButton.Location = new System.Drawing.Point(4, 22);
-            this.tabMButton.Name = "tabMButton";
-            this.tabMButton.Size = new System.Drawing.Size(260, 114);
-            this.tabMButton.TabIndex = 1;
-            this.tabMButton.Text = "Button";
-            this.tabMButton.UseVisualStyleBackColor = true;
-            // 
-            // tabMXbutton
-            // 
-            this.tabMXbutton.Controls.Add(this.numXButtonN);
-            this.tabMXbutton.Controls.Add(this.checkXButtonUp);
-            this.tabMXbutton.Controls.Add(this.checkXButtonDown);
-            this.tabMXbutton.Location = new System.Drawing.Point(4, 22);
-            this.tabMXbutton.Name = "tabMXbutton";
-            this.tabMXbutton.Size = new System.Drawing.Size(260, 114);
-            this.tabMXbutton.TabIndex = 2;
-            this.tabMXbutton.Text = "X button";
-            this.tabMXbutton.UseVisualStyleBackColor = true;
-            // 
-            // tabMScroll
-            // 
-            this.tabMScroll.Controls.Add(this.checkScrollH);
-            this.tabMScroll.Controls.Add(this.numScrollN);
-            this.tabMScroll.Location = new System.Drawing.Point(4, 22);
-            this.tabMScroll.Name = "tabMScroll";
-            this.tabMScroll.Size = new System.Drawing.Size(260, 114);
-            this.tabMScroll.TabIndex = 3;
-            this.tabMScroll.Text = "Scroll";
-            this.tabMScroll.UseVisualStyleBackColor = true;
-            // 
-            // numScrollN
-            // 
-            this.numScrollN.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.numScrollN.Increment = new decimal(new int[] {
-            120,
-            0,
-            0,
-            0});
-            this.numScrollN.Location = new System.Drawing.Point(3, 3);
-            this.numScrollN.Maximum = new decimal(new int[] {
-            600,
-            0,
-            0,
-            0});
-            this.numScrollN.Minimum = new decimal(new int[] {
-            600,
-            0,
-            0,
-            -2147483648});
-            this.numScrollN.Name = "numScrollN";
-            this.numScrollN.Size = new System.Drawing.Size(178, 20);
-            this.numScrollN.TabIndex = 0;
-            // 
-            // checkScrollH
-            // 
-            this.checkScrollH.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkScrollH.AutoSize = true;
-            this.checkScrollH.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.checkScrollH.Location = new System.Drawing.Point(187, 3);
-            this.checkScrollH.Name = "checkScrollH";
-            this.checkScrollH.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.checkScrollH.Size = new System.Drawing.Size(70, 17);
-            this.checkScrollH.TabIndex = 1;
-            this.checkScrollH.Text = "Horizontal";
-            this.checkScrollH.UseVisualStyleBackColor = true;
-            // 
-            // checkXButtonDown
-            // 
-            this.checkXButtonDown.AutoSize = true;
-            this.checkXButtonDown.Location = new System.Drawing.Point(3, 3);
-            this.checkXButtonDown.Name = "checkXButtonDown";
-            this.checkXButtonDown.Size = new System.Drawing.Size(105, 17);
-            this.checkXButtonDown.TabIndex = 0;
-            this.checkXButtonDown.Text = "XButton_DOWN";
-            this.checkXButtonDown.UseVisualStyleBackColor = true;
-            // 
-            // checkXButtonUp
-            // 
-            this.checkXButtonUp.AutoSize = true;
-            this.checkXButtonUp.Location = new System.Drawing.Point(3, 26);
-            this.checkXButtonUp.Name = "checkXButtonUp";
-            this.checkXButtonUp.Size = new System.Drawing.Size(85, 17);
-            this.checkXButtonUp.TabIndex = 0;
-            this.checkXButtonUp.Text = "XButton_UP";
-            this.checkXButtonUp.UseVisualStyleBackColor = true;
-            // 
-            // numXButtonN
-            // 
-            this.numXButtonN.Location = new System.Drawing.Point(3, 49);
-            this.numXButtonN.Maximum = new decimal(new int[] {
-            2,
-            0,
-            0,
-            0});
-            this.numXButtonN.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.numXButtonN.Name = "numXButtonN";
-            this.numXButtonN.Size = new System.Drawing.Size(254, 20);
-            this.numXButtonN.TabIndex = 1;
-            this.numXButtonN.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(16, 4);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(28, 13);
-            this.label3.TabIndex = 0;
-            this.label3.Text = "Left:";
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(9, 27);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(35, 13);
-            this.label4.TabIndex = 0;
-            this.label4.Text = "Right:";
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(3, 49);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(41, 13);
-            this.label5.TabIndex = 0;
-            this.label5.Text = "Middle:";
-            // 
-            // checkMBLD
-            // 
-            this.checkMBLD.AutoSize = true;
-            this.checkMBLD.Location = new System.Drawing.Point(50, 3);
-            this.checkMBLD.Name = "checkMBLD";
-            this.checkMBLD.Size = new System.Drawing.Size(61, 17);
-            this.checkMBLD.TabIndex = 1;
-            this.checkMBLD.Text = "DOWN";
-            this.checkMBLD.UseVisualStyleBackColor = true;
-            // 
-            // checkMBLU
-            // 
-            this.checkMBLU.AutoSize = true;
-            this.checkMBLU.Location = new System.Drawing.Point(117, 3);
-            this.checkMBLU.Name = "checkMBLU";
-            this.checkMBLU.Size = new System.Drawing.Size(41, 17);
-            this.checkMBLU.TabIndex = 1;
-            this.checkMBLU.Text = "UP";
-            this.checkMBLU.UseVisualStyleBackColor = true;
-            // 
-            // checkMBRD
-            // 
-            this.checkMBRD.AutoSize = true;
-            this.checkMBRD.Location = new System.Drawing.Point(50, 26);
-            this.checkMBRD.Name = "checkMBRD";
-            this.checkMBRD.Size = new System.Drawing.Size(61, 17);
-            this.checkMBRD.TabIndex = 1;
-            this.checkMBRD.Text = "DOWN";
-            this.checkMBRD.UseVisualStyleBackColor = true;
-            // 
-            // checkMBRU
-            // 
-            this.checkMBRU.AutoSize = true;
-            this.checkMBRU.Location = new System.Drawing.Point(117, 26);
-            this.checkMBRU.Name = "checkMBRU";
-            this.checkMBRU.Size = new System.Drawing.Size(41, 17);
-            this.checkMBRU.TabIndex = 1;
-            this.checkMBRU.Text = "UP";
-            this.checkMBRU.UseVisualStyleBackColor = true;
-            // 
-            // checkMBMD
-            // 
-            this.checkMBMD.AutoSize = true;
-            this.checkMBMD.Location = new System.Drawing.Point(50, 48);
-            this.checkMBMD.Name = "checkMBMD";
-            this.checkMBMD.Size = new System.Drawing.Size(61, 17);
-            this.checkMBMD.TabIndex = 1;
-            this.checkMBMD.Text = "DOWN";
-            this.checkMBMD.UseVisualStyleBackColor = true;
-            // 
-            // checkMBMU
-            // 
-            this.checkMBMU.AutoSize = true;
-            this.checkMBMU.Location = new System.Drawing.Point(117, 48);
-            this.checkMBMU.Name = "checkMBMU";
-            this.checkMBMU.Size = new System.Drawing.Size(41, 17);
-            this.checkMBMU.TabIndex = 1;
-            this.checkMBMU.Text = "UP";
-            this.checkMBMU.UseVisualStyleBackColor = true;
-            // 
             // FormBuilder
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -623,22 +626,22 @@
             this.tabKey.ResumeLayout(false);
             this.panelLayoutDummy2.ResumeLayout(false);
             this.tabMouse.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.numMouseY)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numMouseX)).EndInit();
-            this.tabMspeed.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.numMspeed)).EndInit();
-            this.panelLayoutDummy1.ResumeLayout(false);
             this.tabMouseEvent.ResumeLayout(false);
             this.tabMMove.ResumeLayout(false);
             this.tabMMove.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numMouseY)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numMouseX)).EndInit();
             this.tabMButton.ResumeLayout(false);
             this.tabMButton.PerformLayout();
             this.tabMXbutton.ResumeLayout(false);
             this.tabMXbutton.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numXButtonN)).EndInit();
             this.tabMScroll.ResumeLayout(false);
             this.tabMScroll.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numScrollN)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numXButtonN)).EndInit();
+            this.tabMspeed.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.numMspeed)).EndInit();
+            this.panelLayoutDummy1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
