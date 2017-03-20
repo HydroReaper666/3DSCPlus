@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using MarcusD.Util;
 
 namespace MarcusD._3DSCPlusDummy
 {
@@ -75,51 +76,94 @@ namespace MarcusD._3DSCPlusDummy
 
         private void btnCfgSave_Click(object sender, EventArgs e)
         {
-            using(FileStream fs = File.OpenWrite(path))
+            Ini ini = new Ini("3dsp.ini");
+            Ini.IniSection sect = null;
+
+            sect = ini.GetSection("general");
+            sect["IP"] = textIP.Text.Trim();
+            sect["port"] = numPort.Value.ToString();
+            sect["rekts"] = dmy.rekts.Count.ToString();
+
+            foreach (Dummy.Keybinding kb in dmy.bindings)
             {
-                foreach(Dummy.Keybinding kb in dmy.bindings)
-                {
-                    if(kb == null) continue;
-                    fs.WriteByte((byte)kb.nth);
-                    kb.Export(fs);
-                }
+                if (kb == null) continue;
+                sect = ini.GetSection("Keys/" + kb.nth);
 
-                fs.WriteByte(0xFF);
+                KeybindToIni(sect, kb);
+            }
 
-                fs.WriteByte((byte)dmy.rekts.Count);
-                foreach(Dummy.RektButton rb in dmy.rekts)
-                {
-                    if(rb == null) continue;
-                    rb.Export(fs);
-                }
+            for(int i = 0; i != dmy.rekts.Count; i++)
+            {
+                sect = ini.GetSection("Rekt/" + i);
+
+                sect.WriteStruct<Rectangle>("bnd", dmy.rekts[i].rekt);
+                KeybindToIni(sect, dmy.rekts[i].kb);
             }
         }
 
         private void btnCfgLoad_Click(object sender, EventArgs e)
         {
-            if(!File.Exists(path)) return;
-            using(FileStream fs = File.OpenRead(path))
+            if (File.Exists(path))
             {
-                while(true)
+                using (FileStream fs = File.OpenRead(path))
                 {
-                    byte nth = (byte)fs.ReadByte();
-                    if(nth == 0xFF) break;
+                    while (true)
+                    {
+                        byte nth = (byte)fs.ReadByte();
+                        if (nth == 0xFF) break;
 
-                    Dummy.Keybinding kb = dmy.bindings[nth];
-                    kb.Import(fs);
+                        Dummy.Keybinding kb = dmy.bindings[nth];
+                        kb.Import(fs);
+                    }
+
+                    dmy.rekts.Clear();
+
+                    int i = fs.ReadByte();
+
+                    while (i > 0)
+                    {
+                        Dummy.RektButton rb = new Dummy.RektButton();
+                        rb.Import(fs);
+                        dmy.rekts.Add(rb);
+                        i--;
+                    }
                 }
 
-                dmy.rekts.Clear();
+                File.Delete(path);
 
-                int i = fs.ReadByte();
+                btnCfgSave.PerformClick();
+            }
+
+            Ini ini = new Ini("3dsp.ini");
+            Ini.IniSection sect = null;
+
+            sect = ini.GetSection("general");
+            textIP.Text = sect.Read("IP", "10.0.0.104");
+            numPort.Value = (UInt16)sect.ReadInt("port", 6956);
+
+            int cnt = sect.ReadInt("rekts");
+
+            for (int i = 0; i != 32; i++)
+            {
+                sect = ini.GetSection("Keys/" + i);
                 
-                while(i > 0)
-                {
-                    Dummy.RektButton rb = new Dummy.RektButton();
-                    rb.Import(fs);
-                    dmy.rekts.Add(rb);
-                    i--;
-                }
+                IniToKeybind(sect, dmy.bindings[i]);
+            }
+
+            dmy.rekts.Clear();
+            for (int i = 0; i != cnt; i++)
+            {
+                sect = ini.GetSection("Rekt/" + i);
+
+                Rectangle? rect = sect.ReadStruct<Rectangle>("bnd");
+                if (!rect.HasValue) continue;
+
+                Dummy.RektButton rekt = new Dummy.RektButton();
+                rekt.kb = new Dummy.Keybinding();
+                rekt.rekt = rect.Value;
+                IniToKeybind(sect, rekt.kb);
+
+                dmy.rekts.Add(rekt);
             }
         }
 
@@ -142,6 +186,66 @@ namespace MarcusD._3DSCPlusDummy
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             checkConnect.Checked = false;
+        }
+
+        private void btnMisc_Click(object sender, EventArgs e)
+        {
+            using(FormMisc frm = new FormMisc(dmy))
+            {
+                frm.ShowDialog();
+            }
+        }
+
+        void KeybindToIni(Ini.IniSection sect, Dummy.Keybinding kb)
+        {
+            if (kb == null) return;
+
+            sect["edc"] = kb.edown.Count.ToString();
+            for (int i = 0; i != kb.edown.Count; i++)
+            {
+                sect.WriteStruct<Dummy.Keybinding.Event>("edc" + i, kb.edown[i]);
+            }
+
+            sect["ehc"] = kb.eheld.Count.ToString();
+            for (int i = 0; i != kb.eheld.Count; i++)
+            {
+                sect.WriteStruct<Dummy.Keybinding.Event>("ehc" + i, kb.eheld[i]);
+            }
+
+            sect["euc"] = kb.eup.Count.ToString();
+            for (int i = 0; i != kb.eup.Count; i++)
+            {
+                sect.WriteStruct<Dummy.Keybinding.Event>("euc" + i, kb.eup[i]);
+            }
+        }
+
+        void IniToKeybind(Ini.IniSection sect, Dummy.Keybinding kb)
+        {
+            if (kb == null) return;
+
+            kb.edown.Clear();
+            kb.eheld.Clear();
+            kb.eup.Clear();
+
+            int cnt = 0;
+
+            cnt = sect.ReadInt("edc");
+            for (int i = 0; i != cnt; i++)
+            {
+                kb.edown.Add(sect.ReadStruct<Dummy.Keybinding.Event>("edc" + i).Value);
+            }
+
+            cnt = sect.ReadInt("ehc");
+            for (int i = 0; i != cnt; i++)
+            {
+                kb.eheld.Add(sect.ReadStruct<Dummy.Keybinding.Event>("ehc" + i).Value);
+            }
+
+            cnt = sect.ReadInt("euc");
+            for (int i = 0; i != cnt; i++)
+            {
+                kb.eup.Add(sect.ReadStruct<Dummy.Keybinding.Event>("euc" + i).Value);
+            }
         }
     }
 }

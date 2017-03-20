@@ -58,6 +58,7 @@
             this.btnCfgSave = new System.Windows.Forms.Button();
             this.btnCfgLoad = new System.Windows.Forms.Button();
             this.btnAltEditor = new System.Windows.Forms.Button();
+            this.btnMisc = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numPort)).BeginInit();
             this.SuspendLayout();
             // 
@@ -76,7 +77,7 @@
             this.textIP.Name = "textIP";
             this.textIP.Size = new System.Drawing.Size(186, 20);
             this.textIP.TabIndex = 1;
-            this.textIP.Text = "10.0.0.101";
+            this.textIP.Text = "10.0.0.104";
             // 
             // numPort
             // 
@@ -406,11 +407,22 @@
             this.btnAltEditor.UseVisualStyleBackColor = true;
             this.btnAltEditor.Click += new System.EventHandler(this.btnAltEditor_Click);
             // 
+            // btnMisc
+            // 
+            this.btnMisc.Location = new System.Drawing.Point(145, 222);
+            this.btnMisc.Name = "btnMisc";
+            this.btnMisc.Size = new System.Drawing.Size(89, 23);
+            this.btnMisc.TabIndex = 17;
+            this.btnMisc.Text = "Misc settings";
+            this.btnMisc.UseVisualStyleBackColor = true;
+            this.btnMisc.Click += new System.EventHandler(this.btnMisc_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(380, 282);
+            this.Controls.Add(this.btnMisc);
             this.Controls.Add(this.btnAltEditor);
             this.Controls.Add(this.btnCfgLoad);
             this.Controls.Add(this.btnCfgSave);
@@ -485,6 +497,7 @@
         private System.Windows.Forms.Button btnCfgSave;
         private System.Windows.Forms.Button btnCfgLoad;
         private System.Windows.Forms.Button btnAltEditor;
+        private System.Windows.Forms.Button btnMisc;
     }
 }
 

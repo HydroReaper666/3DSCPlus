@@ -43,6 +43,11 @@ using System.Drawing;
 
         RektButton currekt = null;
 
+        public Boolean abs = true;
+
+        float spx = 65535 / 320.0F;
+        float spy = 65535 / 240.0F;
+
         public class RektButton
         {
             public Rectangle rekt;
@@ -355,7 +360,10 @@ using System.Drawing;
                         }
                         else if((kheld & (1 << 20)) != 0) //KEY_TOUCH
                         {
-                            NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), (tx - px) * currspeed, (ty - py) * currspeed, 0, 0);
+                            if(abs)
+                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE | NativeInput.MouseEventFlags.MOVE_ABS), (int)(tx * spx), (int)(ty * spy), 0, 0);
+                            else
+                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), (tx - px) * currspeed, (ty - py) * currspeed, 0, 0);
 
                             px = tx;
                             py = ty;

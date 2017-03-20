@@ -110,6 +110,12 @@ int main()
       hangmacro();
   }
   
+  ret = irrstInit();
+  if(ret < 0)
+  {
+      printf("Failed to init irrst: %08X\n", ret);
+  }
+  
   consoleClear();
   
   reloop:
@@ -247,6 +253,8 @@ int main()
   // =====[END]=====
   
   killswitch:
+  
+  irrstExit();
   
   handshake(DISCONNECT);
   
