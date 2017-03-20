@@ -103,6 +103,8 @@ namespace MarcusD._3DSCPlusDummy
 
         private void btnCfgLoad_Click(object sender, EventArgs e)
         {
+            dmy.rekts.Clear();
+
             if (File.Exists(path))
             {
                 using (FileStream fs = File.OpenRead(path))
@@ -132,6 +134,9 @@ namespace MarcusD._3DSCPlusDummy
                 File.Delete(path);
 
                 btnCfgSave.PerformClick();
+                btnCfgLoad.PerformClick();
+
+                return;
             }
 
             Ini ini = new Ini("3dsp.ini");
@@ -150,7 +155,6 @@ namespace MarcusD._3DSCPlusDummy
                 IniToKeybind(sect, dmy.bindings[i]);
             }
 
-            dmy.rekts.Clear();
             for (int i = 0; i != cnt; i++)
             {
                 sect = ini.GetSection("Rekt/" + i);
