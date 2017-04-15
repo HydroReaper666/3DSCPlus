@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarcusD.3DSCPlusDummy", "MarcusD.3DSCPlusDummy\MarcusD.3DSCPlusDummy.csproj", "{776DD44F-9251-4342-ADA8-FADBAB662EB2}"
 EndProject
 Global

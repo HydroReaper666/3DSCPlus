@@ -36,6 +36,8 @@
             this.btnOpenImage = new System.Windows.Forms.Button();
             this.btnBgsel = new System.Windows.Forms.Button();
             this.btnAdd = new System.Windows.Forms.Button();
+            this.lblSel = new System.Windows.Forms.Label();
+            this.radioToolResize = new System.Windows.Forms.RadioButton();
             ((System.ComponentModel.ISupportInitialize)(this.imgAlt)).BeginInit();
             this.SuspendLayout();
             // 
@@ -58,9 +60,10 @@
             this.radioToolSelect.AutoSize = true;
             this.radioToolSelect.Checked = true;
             this.radioToolSelect.Dock = System.Windows.Forms.DockStyle.Top;
+            this.radioToolSelect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.radioToolSelect.Location = new System.Drawing.Point(320, 0);
             this.radioToolSelect.Name = "radioToolSelect";
-            this.radioToolSelect.Size = new System.Drawing.Size(84, 17);
+            this.radioToolSelect.Size = new System.Drawing.Size(80, 17);
             this.radioToolSelect.TabIndex = 1;
             this.radioToolSelect.TabStop = true;
             this.radioToolSelect.Text = "Select";
@@ -71,9 +74,10 @@
             // 
             this.radioToolDelet.AutoSize = true;
             this.radioToolDelet.Dock = System.Windows.Forms.DockStyle.Top;
+            this.radioToolDelet.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.radioToolDelet.Location = new System.Drawing.Point(320, 17);
             this.radioToolDelet.Name = "radioToolDelet";
-            this.radioToolDelet.Size = new System.Drawing.Size(84, 17);
+            this.radioToolDelet.Size = new System.Drawing.Size(80, 17);
             this.radioToolDelet.TabIndex = 3;
             this.radioToolDelet.Text = "Delete";
             this.radioToolDelet.UseVisualStyleBackColor = true;
@@ -83,9 +87,10 @@
             // 
             this.radioToolEdit.AutoSize = true;
             this.radioToolEdit.Dock = System.Windows.Forms.DockStyle.Top;
+            this.radioToolEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.radioToolEdit.Location = new System.Drawing.Point(320, 34);
             this.radioToolEdit.Name = "radioToolEdit";
-            this.radioToolEdit.Size = new System.Drawing.Size(84, 17);
+            this.radioToolEdit.Size = new System.Drawing.Size(80, 17);
             this.radioToolEdit.TabIndex = 4;
             this.radioToolEdit.Text = "Edit";
             this.radioToolEdit.UseVisualStyleBackColor = true;
@@ -94,9 +99,10 @@
             // btnOK
             // 
             this.btnOK.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.btnOK.Location = new System.Drawing.Point(320, 220);
+            this.btnOK.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnOK.Location = new System.Drawing.Point(320, 219);
             this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(84, 21);
+            this.btnOK.Size = new System.Drawing.Size(80, 21);
             this.btnOK.TabIndex = 5;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
@@ -105,9 +111,10 @@
             // btnOpenImage
             // 
             this.btnOpenImage.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.btnOpenImage.Location = new System.Drawing.Point(320, 197);
+            this.btnOpenImage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnOpenImage.Location = new System.Drawing.Point(320, 196);
             this.btnOpenImage.Name = "btnOpenImage";
-            this.btnOpenImage.Size = new System.Drawing.Size(84, 23);
+            this.btnOpenImage.Size = new System.Drawing.Size(80, 23);
             this.btnOpenImage.TabIndex = 6;
             this.btnOpenImage.Text = "Select Image";
             this.btnOpenImage.UseVisualStyleBackColor = true;
@@ -116,9 +123,10 @@
             // btnBgsel
             // 
             this.btnBgsel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.btnBgsel.Location = new System.Drawing.Point(320, 174);
+            this.btnBgsel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBgsel.Location = new System.Drawing.Point(320, 173);
             this.btnBgsel.Name = "btnBgsel";
-            this.btnBgsel.Size = new System.Drawing.Size(84, 23);
+            this.btnBgsel.Size = new System.Drawing.Size(80, 23);
             this.btnBgsel.TabIndex = 7;
             this.btnBgsel.Text = "Bg Color";
             this.btnBgsel.UseVisualStyleBackColor = true;
@@ -127,19 +135,46 @@
             // btnAdd
             // 
             this.btnAdd.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.btnAdd.Location = new System.Drawing.Point(320, 151);
+            this.btnAdd.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAdd.Location = new System.Drawing.Point(320, 150);
             this.btnAdd.Name = "btnAdd";
-            this.btnAdd.Size = new System.Drawing.Size(84, 23);
+            this.btnAdd.Size = new System.Drawing.Size(80, 23);
             this.btnAdd.TabIndex = 8;
-            this.btnAdd.Text = "Add";
+            this.btnAdd.Text = "Add/Update";
             this.btnAdd.UseVisualStyleBackColor = true;
             this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
+            // 
+            // lblSel
+            // 
+            this.lblSel.AutoSize = true;
+            this.lblSel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.lblSel.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.lblSel.Location = new System.Drawing.Point(320, 83);
+            this.lblSel.Name = "lblSel";
+            this.lblSel.Size = new System.Drawing.Size(43, 52);
+            this.lblSel.TabIndex = 9;
+            this.lblSel.Text = "X: ???\r\nY: ???\r\nW: ???\r\nH: ???";
+            // 
+            // radioToolResize
+            // 
+            this.radioToolResize.AutoSize = true;
+            this.radioToolResize.Dock = System.Windows.Forms.DockStyle.Top;
+            this.radioToolResize.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.radioToolResize.Location = new System.Drawing.Point(320, 51);
+            this.radioToolResize.Name = "radioToolResize";
+            this.radioToolResize.Size = new System.Drawing.Size(80, 17);
+            this.radioToolResize.TabIndex = 10;
+            this.radioToolResize.Text = "Resize";
+            this.radioToolResize.UseVisualStyleBackColor = true;
+            this.radioToolResize.CheckedChanged += new System.EventHandler(this.radioToolResize_CheckedChanged);
             // 
             // FormAltedit
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(404, 241);
+            this.ClientSize = new System.Drawing.Size(400, 240);
+            this.Controls.Add(this.radioToolResize);
+            this.Controls.Add(this.lblSel);
             this.Controls.Add(this.btnAdd);
             this.Controls.Add(this.btnBgsel);
             this.Controls.Add(this.btnOpenImage);
@@ -148,8 +183,12 @@
             this.Controls.Add(this.radioToolDelet);
             this.Controls.Add(this.radioToolSelect);
             this.Controls.Add(this.imgAlt);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
+            this.MaximizeBox = false;
             this.Name = "FormAltedit";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "FormAltedit";
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FormAltedit_KeyDown);
             ((System.ComponentModel.ISupportInitialize)(this.imgAlt)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -158,7 +197,6 @@
 
         #endregion
 
-        private System.Windows.Forms.PictureBox imgAlt;
         private System.Windows.Forms.RadioButton radioToolSelect;
         private System.Windows.Forms.RadioButton radioToolDelet;
         private System.Windows.Forms.RadioButton radioToolEdit;
@@ -166,5 +204,8 @@
         private System.Windows.Forms.Button btnOpenImage;
         private System.Windows.Forms.Button btnBgsel;
         private System.Windows.Forms.Button btnAdd;
+        private System.Windows.Forms.Label lblSel;
+        private System.Windows.Forms.RadioButton radioToolResize;
+        public System.Windows.Forms.PictureBox imgAlt;
     }
 }

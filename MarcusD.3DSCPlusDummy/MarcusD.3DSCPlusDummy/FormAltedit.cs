@@ -18,14 +18,18 @@ namespace MarcusD._3DSCPlusDummy
         {
             SELECT,
             DEL,
-            EDIT
+            EDIT,
+            POS
         };
 
         Mode mode = Mode.SELECT;
 
         public byte[] imgbytes = null;
+        public String filename = null;
 
         List<Dummy.RektButton> rekts;
+
+        Dummy.RektButton curr = null;
 
         Pen p = new Pen(Color.DarkCyan, 1.1F);
         Pen sp = new Pen(Color.DarkRed, 1.2F);
@@ -33,9 +37,13 @@ namespace MarcusD._3DSCPlusDummy
         int sx = -1, sy = -1, cx = 0, cy = 0;
         Boolean _seling = false;
 
+        Boolean redrva = false;
+
         public FormAltedit(List<Dummy.RektButton> rekts)
         {
             InitializeComponent();
+
+            imgAlt.Focus();
 
             this.rekts = rekts;
 
@@ -45,9 +53,37 @@ namespace MarcusD._3DSCPlusDummy
             imgAlt.MouseUp += imgAlt_MouseUp;
         }
 
+        void UpdateSel(Boolean wat)
+        {
+            if(wat)
+            {
+                if(!_seling) _seling = true;
+            }
+            else
+            {
+                if(_seling) _seling = false;
+            }
+
+            if(sx == -1 && sy == -1 && cx == 0 && cy == 0)
+                lblSel.Text = "X: ???\nY: ???\nW: ???\nH: ???";
+            else
+                lblSel.Text = "X: " + Math.Min(sx, cx) + "\nY: " + Math.Min(sy, cy) + "\nW: " + Math.Abs(sx - cx) + "\nH: " + Math.Abs(sy - cy);
+        }
+
+        void LoadBG()
+        {
+            if(filename == null) return;
+            try
+            {
+                Image img = Image.FromFile(filename);
+                imgAlt.BackgroundImage = img;
+            }
+            catch { }
+        }
+
         void imgAlt_MouseUp(object sender, MouseEventArgs e)
         {
-            _seling = false;
+            UpdateSel(false);
             this.Invalidate(true);
         }
 
@@ -56,13 +92,14 @@ namespace MarcusD._3DSCPlusDummy
             if(!_seling) return;
             cx = e.X;
             cy = e.Y;
+            UpdateSel(true);
         }
 
         void imgAlt_MouseDown(object sender, MouseEventArgs e)
         {
             if(mode == Mode.SELECT)
             {
-                _seling = true;
+                UpdateSel(true);
                 sx = e.X;
                 sy = e.Y;
                 cx = sx;
@@ -110,10 +147,33 @@ namespace MarcusD._3DSCPlusDummy
                     fm.ShowDialog();
                 }
             }
+            else if(mode == Mode.POS)
+            {
+                curr = null;
+
+                Rectangle cur = new Rectangle(e.X, e.Y, 1, 1);
+                foreach(Dummy.RektButton rekt in rekts)
+                {
+                    if(rekt.rekt.IntersectsWith(cur))
+                    {
+                        curr = rekt;
+                        break;
+                    }
+                }
+
+                if(curr == null) return;
+
+                sx = curr.rekt.X;
+                sy = curr.rekt.Y;
+                cx = curr.rekt.Right;
+                cy = curr.rekt.Bottom;
+            }
         }
 
         void imgAlt_Paint(object sender, PaintEventArgs e)
         {
+            if(redrva) return;
+
             foreach(Dummy.RektButton rekt in rekts)
             {
                 e.Graphics.DrawRectangle(p, rekt.rekt);
@@ -161,18 +221,20 @@ namespace MarcusD._3DSCPlusDummy
             mode = Mode.EDIT;
         }
 
+        private void radioToolResize_CheckedChanged(object sender, EventArgs e)
+        {
+            mode = Mode.POS;
+            UpdateSel(true);
+        }
+
         private void btnOpenImage_Click(object sender, EventArgs e)
         {
             using(OpenFileDialog fd = new OpenFileDialog())
             {
                 if(fd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    try
-                    {
-                        Image img = Image.FromFile(fd.FileName);
-                        imgAlt.BackgroundImage = img;
-                    }
-                    catch { }
+                    filename = fd.FileName;
+                    LoadBG();
                 }
             }
         }
@@ -190,18 +252,34 @@ namespace MarcusD._3DSCPlusDummy
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            if(sx == -1) return;
-
             int x, y, w, h;
 
             x = Math.Min(sx, cx);
             y = Math.Min(sy, cy);
+
+            if(x < 0 || y < 0) return;
+
             w = Math.Max(sx, cx) - x;
             h = Math.Max(sy, cy) - y;
 
-            rekts.Add(new Dummy.RektButton() { rekt = new Rectangle(x, y, w, h), kb = new Dummy.Keybinding() });
+            if(curr == null)
+                rekts.Add(new Dummy.RektButton() { rekt = new Rectangle(x, y, w, h), kb = new Dummy.Keybinding() });
+            else
+            {
+                curr.rekt.X = x;
+                curr.rekt.Y = y;
+                curr.rekt.Width = w;
+                curr.rekt.Height = h;
+
+                curr = null;
+            }
 
             sx = -1; sy = -1; cx = 0; cy = 0;
+        }
+
+        private void FormAltedit_KeyDown(object sender, KeyEventArgs e)
+        {
+            MessageBox.Show("lol: " + e.KeyCode + "\nlel: " + e.KeyData);
         }
     }
 }

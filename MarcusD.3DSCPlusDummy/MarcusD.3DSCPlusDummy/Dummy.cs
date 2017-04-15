@@ -25,17 +25,17 @@ using System.Drawing;
         public Thread t = null;
         public Boolean running = false;
 
-        public String ipaddr = "10.0.0.101";
+        public String ipaddr = "10.0.0.103";
         public UInt16 port = 6956;
 
         public byte[] imgbuf = null;
 
-        int polltimeout = 3 * 1000 * 1000;
-        int altkey = 1 << 11;
-        Boolean dcexit = false;
-        int deadzone = 12;
-        int speed = 1;
+        public int polltimeout = 3 * 1000 * 1000;
+        public int altkey = 1 << 11;
+        public Boolean dcexit = false;
+        public int deadzone = 12;
 
+        int speed = 1;
         int currspeed = 1;
 
         public Keybinding[] bindings = new Keybinding[32];
@@ -43,10 +43,15 @@ using System.Drawing;
 
         RektButton currekt = null;
 
-        public Boolean abs = true;
+        public Boolean abs = false;
 
-        float spx = 65535 / 320.0F;
-        float spy = 65535 / 240.0F;
+        public IntPtr hwnd = IntPtr.Zero;
+
+        //float spx = 65535 / 320.0F;
+        //float spy = 65535 / 240.0F;
+
+        float spx = 1366 / 320.0F;
+        float spy = 768 / 240.0F;
 
         public class RektButton
         {
@@ -360,8 +365,29 @@ using System.Drawing;
                         }
                         else if((kheld & (1 << 20)) != 0) //KEY_TOUCH
                         {
-                            if(abs)
-                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE | NativeInput.MouseEventFlags.MOVE_ABS), (int)(tx * spx), (int)(ty * spy), 0, 0);
+                            if (abs)
+                            {
+                                NativeInput.POINT pt;
+                                pt.X = 0;
+                                pt.Y = 0;
+
+                                NativeInput.RECT rect;
+                                if(hwnd == IntPtr.Zero)
+                                    rect = Screen.PrimaryScreen.Bounds;
+                                else
+                                    NativeInput.GetClientRect(hwnd, out rect);
+
+                                pt.X = rect.Left;
+                                pt.Y = rect.Top;
+                                pt.X =+ (int)(rect.Width / 320.0F * tx);
+                                pt.Y =+ (int)(rect.Height / 240.0F * ty);
+
+
+                                NativeInput.ClientToScreen(hwnd, ref pt);
+
+                                //NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE | NativeInput.MouseEventFlags.MOVE_ABS), pt.X, pt.Y, 0, 0);
+                                Cursor.Position = pt;
+                            }
                             else
                                 NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), (tx - px) * currspeed, (ty - py) * currspeed, 0, 0);
 
@@ -410,6 +436,7 @@ using System.Drawing;
 
 
             sock.Shutdown(SocketShutdown.Both);
+            sock.Close();
         }
 
         void ProcessKDown(Dummy.Keybinding key)

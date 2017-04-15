@@ -17,56 +17,43 @@ enum NET_COMMANDS
 	CONNECT = 0,
 	DISCONNECT,
 	KEYS,
-	SCREENSHOT
+	SCREENSHOT,
+	VID_START,
+	VID_DATA,
+	VID_END
 };
 
 struct packet
 {
-	union
-	{
-		struct packethdr
-		{
-			unsigned char cmd;
-			unsigned char altcmd;
-		};
-		struct packethdr hdr;
-	};
+    struct packethdr
+    {
+        unsigned char cmd;
+        unsigned char altcmd;
+    } hdr;
 	
 	union
 	{
 		// CONNECT
-		union
-		{
-			struct packet_conn
-			{
-			    u32 altkey;
-			};
-			struct packet_conn conn;
-		};
+        struct
+        {
+            u32 altkey;
+        } conn;
 		
 		// KEYS
-		union
-		{
-			struct packet_input
-			{
-				u32 key;
-                touchPosition touch;
-				circlePosition cpad;
-				circlePosition cstick;
-			};
-			struct packet_input input;
-		};
+        struct
+        {
+            u32 key;
+            touchPosition touch;
+            circlePosition cpad;
+            circlePosition cstick;
+        } input;
 		
 		// SCREENSHOT
-		union
-		{
-			struct packet_screen
-			{
-			    u16 offs;
-				u8 data[SCREENSHOT_CHUNK];
-			};
-			struct packet_screen screen;
-		};
+        struct
+        {
+            u16 offs;
+            u8 data[SCREENSHOT_CHUNK];
+        } screen;
 	};
 };
 

@@ -82,6 +82,9 @@ namespace MarcusD._3DSCPlusDummy
             sect = ini.GetSection("general");
             sect["IP"] = textIP.Text.Trim();
             sect["port"] = numPort.Value.ToString();
+            sect["abs"] = dmy.abs ? "1" : "0";
+            sect["altkey"] = dmy.altkey.ToString("X8");
+
             sect["rekts"] = dmy.rekts.Count.ToString();
 
             foreach (Dummy.Keybinding kb in dmy.bindings)
@@ -118,8 +121,6 @@ namespace MarcusD._3DSCPlusDummy
                         kb.Import(fs);
                     }
 
-                    dmy.rekts.Clear();
-
                     int i = fs.ReadByte();
 
                     while (i > 0)
@@ -143,8 +144,17 @@ namespace MarcusD._3DSCPlusDummy
             Ini.IniSection sect = null;
 
             sect = ini.GetSection("general");
-            textIP.Text = sect.Read("IP", "10.0.0.104");
-            numPort.Value = (UInt16)sect.ReadInt("port", 6956);
+            textIP.Text = sect.Read("IP", dmy.ipaddr);
+            numPort.Value = (UInt16)sect.ReadInt("port", dmy.port);
+
+            dmy.abs = sect.ReadInt("abs", dmy.abs ? 1 : 0) == 0 ? false : true;
+
+            try
+            {
+                int wat = Convert.ToInt32(sect.Read("altk", ""), 16);
+                dmy.altkey = wat;
+            }
+            catch { }
 
             int cnt = sect.ReadInt("rekts");
 

@@ -59,6 +59,7 @@
             this.btnCfgLoad = new System.Windows.Forms.Button();
             this.btnAltEditor = new System.Windows.Forms.Button();
             this.btnMisc = new System.Windows.Forms.Button();
+            this.lblCurrConf = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.numPort)).BeginInit();
             this.SuspendLayout();
             // 
@@ -73,6 +74,7 @@
             // 
             // textIP
             // 
+            this.textIP.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textIP.Location = new System.Drawing.Point(38, 6);
             this.textIP.Name = "textIP";
             this.textIP.Size = new System.Drawing.Size(186, 20);
@@ -81,6 +83,7 @@
             // 
             // numPort
             // 
+            this.numPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.numPort.Location = new System.Drawing.Point(230, 6);
             this.numPort.Maximum = new decimal(new int[] {
             65535,
@@ -104,10 +107,11 @@
             // checkConnect
             // 
             this.checkConnect.AutoSize = true;
+            this.checkConnect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.checkConnect.Location = new System.Drawing.Point(303, 8);
             this.checkConnect.Name = "checkConnect";
             this.checkConnect.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.checkConnect.Size = new System.Drawing.Size(66, 17);
+            this.checkConnect.Size = new System.Drawing.Size(63, 17);
             this.checkConnect.TabIndex = 3;
             this.checkConnect.Text = "Connect";
             this.checkConnect.UseVisualStyleBackColor = true;
@@ -381,7 +385,7 @@
             // 
             this.btnCfgSave.Location = new System.Drawing.Point(145, 48);
             this.btnCfgSave.Name = "btnCfgSave";
-            this.btnCfgSave.Size = new System.Drawing.Size(89, 51);
+            this.btnCfgSave.Size = new System.Drawing.Size(89, 24);
             this.btnCfgSave.TabIndex = 16;
             this.btnCfgSave.Text = "Save config";
             this.btnCfgSave.UseVisualStyleBackColor = true;
@@ -389,9 +393,9 @@
             // 
             // btnCfgLoad
             // 
-            this.btnCfgLoad.Location = new System.Drawing.Point(145, 105);
+            this.btnCfgLoad.Location = new System.Drawing.Point(145, 75);
             this.btnCfgLoad.Name = "btnCfgLoad";
-            this.btnCfgLoad.Size = new System.Drawing.Size(89, 54);
+            this.btnCfgLoad.Size = new System.Drawing.Size(89, 24);
             this.btnCfgLoad.TabIndex = 16;
             this.btnCfgLoad.Text = "Load config";
             this.btnCfgLoad.UseVisualStyleBackColor = true;
@@ -399,9 +403,9 @@
             // 
             // btnAltEditor
             // 
-            this.btnAltEditor.Location = new System.Drawing.Point(145, 162);
+            this.btnAltEditor.Location = new System.Drawing.Point(145, 192);
             this.btnAltEditor.Name = "btnAltEditor";
-            this.btnAltEditor.Size = new System.Drawing.Size(89, 54);
+            this.btnAltEditor.Size = new System.Drawing.Size(89, 24);
             this.btnAltEditor.TabIndex = 16;
             this.btnAltEditor.Text = "ALT editor";
             this.btnAltEditor.UseVisualStyleBackColor = true;
@@ -417,11 +421,21 @@
             this.btnMisc.UseVisualStyleBackColor = true;
             this.btnMisc.Click += new System.EventHandler(this.btnMisc_Click);
             // 
+            // lblCurrConf
+            // 
+            this.lblCurrConf.Location = new System.Drawing.Point(145, 105);
+            this.lblCurrConf.Name = "lblCurrConf";
+            this.lblCurrConf.Size = new System.Drawing.Size(89, 24);
+            this.lblCurrConf.TabIndex = 18;
+            this.lblCurrConf.Text = "???";
+            this.lblCurrConf.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(380, 282);
+            this.Controls.Add(this.lblCurrConf);
             this.Controls.Add(this.btnMisc);
             this.Controls.Add(this.btnAltEditor);
             this.Controls.Add(this.btnCfgLoad);
@@ -498,6 +512,7 @@
         private System.Windows.Forms.Button btnCfgLoad;
         private System.Windows.Forms.Button btnAltEditor;
         private System.Windows.Forms.Button btnMisc;
+        private System.Windows.Forms.Label lblCurrConf;
     }
 }
 

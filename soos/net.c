@@ -7,7 +7,7 @@ int sock = 0;
 struct sockaddr_in sai, sao;
 struct packet *inbuf, *outbuf;
 
-static saddrsize = sizeof(struct sockaddr_in);
+static socklen_t saddrsize = sizeof(struct sockaddr_in);
 
 int preparesock(int port)
 {
@@ -19,11 +19,12 @@ int preparesock(int port)
         return errno;
     }
     
-    int opt = 1;
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    //int opt = 1;
+    //setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     
-    sai.sin_family = sao.sin_family = AF_INET;
-    sai.sin_port = sao.sin_port = htons(port);
+    sai.sin_addr.s_addr = INADDR_ANY;
+    sai.sin_family = AF_INET;
+    sai.sin_port = htons(port);
     
     int ret = bind(sock, &sai, sizeof(sai));
     if(ret < 0)
@@ -53,7 +54,7 @@ int handshake(int cmd)
 {
     outbuf->hdr.cmd = cmd;
     outbuf->hdr.altcmd = 0;
-    return sendbuf(offsetof(struct packet, conn) + sizeof(struct packet_conn));
+    return sendbuf(offsetof(struct packet, conn) + sizeof(outbuf->conn));
 }
 
 int sendinput(u8 altcmd, u32 key, touchPosition touch, circlePosition cpad, circlePosition cstick)
@@ -64,5 +65,5 @@ int sendinput(u8 altcmd, u32 key, touchPosition touch, circlePosition cpad, circ
     outbuf->input.touch = touch;
     outbuf->input.cpad = cpad;
     outbuf->input.cstick = cstick;
-    return sendbuf(offsetof(struct packet, input) + sizeof(struct packet_input));
+    return sendbuf(offsetof(struct packet, input) + sizeof(outbuf->input));
 }
