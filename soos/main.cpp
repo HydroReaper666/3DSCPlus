@@ -27,8 +27,8 @@ static int  __excno;
 
 #include <exception>
 
-#include <theora/theoradec.h>
 #include <theora/theora.h>
+#include <theora/theoradec.h>
 
 #define hangmacro()\
 ({\
@@ -313,8 +313,6 @@ int main()
       hangmacro();
   }
   
-  ogg_sync_init(&ogs);
-  
   netreset:
   
   //consoleClear();
@@ -378,6 +376,8 @@ int main()
   //consoleClear();
   
   reloop:
+  
+  //gfxSetScreenFormat(GFX_TOP, GSP_RGB565_OES);
   
   if(vidsetup) { th_setup_free(vidsetup); vidsetup = 0; }
   if(vctx) { th_decode_free(vctx); vctx = 0; }
@@ -527,6 +527,7 @@ int main()
     }
     else if((kHeld & (KEY_START | KEY_SELECT)) == (KEY_START | KEY_SELECT)) break;
     
+    nosoc:
     if(ogg_stream_packetout(&ogv, &ogp) > 0)
     {
         ogg_int64_t dummy;
@@ -590,6 +591,8 @@ int main()
                 if(vctx) { th_decode_free(vctx); vctx = 0; }
                 
                 soc = new bufsoc(cli, 0x21000);
+                
+                //gfxSetScreenFormat(GFX_TOP, GSP_BGR8_OES);
             }
         }
         else if(pollsock(socks, POLLERR) == POLLERR)
@@ -599,7 +602,7 @@ int main()
         }
     }
     
-    if(ogv.body_storage > 0x180000)
+    if(ogv.body_fill > 0x18000)
     {
         starvecheck:
         if(ogg_stream_packetpeek(&ogv, nullptr) > 0)
@@ -664,7 +667,7 @@ int main()
                         {
                             if(nohdr) puts("No headers yet"); else puts("relooping init");
                             
-                            if(!th_hdr)
+                            if(!th_hdr || nohdr)
                             {
                                 puts("No Theora header yet");
                                 while(1)
@@ -697,7 +700,7 @@ int main()
                                         ret = th_decode_headerin(&vidinfo, &vidcomm, &vidsetup, &ogp);
                                         if(ret < 0)
                                         {
-                                            printf("Non-Theora header got, skipping (%i)\n", ret);
+                                            printf("got non-Theora header, skipping (%i)\n", ret);
                                             ogg_stream_clear(&ogst);
                                         }
                                         else
@@ -705,12 +708,24 @@ int main()
                                             puts("got Theora header");
                                             memcpy(&ogv, &ogst, sizeof(ogv));
                                             th_hdr = 1;
+                                            
+                                            printf\
+                                            (\
+                                                "Video info:\n- F: %ix%i\n- P: %ix%i\n- X: %ix%i\n\n",\
+                                                vidinfo.frame_width, vidinfo.frame_height, vidinfo.pic_width, vidinfo.pic_height, vidinfo.pic_x, vidinfo.pic_y\
+                                            );
                                         }
                                     }
                                     else
                                     {
                                         ogg_stream_clear(&ogst);
                                     }
+                                }
+                                
+                                if(ret <= 0)
+                                {
+                                    puts("breaking after ded");
+                                    break;
                                 }
                             }
                             
@@ -753,7 +768,7 @@ int main()
                                 
                                 ret = th_decode_headerin(&vidinfo, &vidcomm, &vidsetup, &ogp);
                                 
-                                if(ret)
+                                if(ret < 0)
                                 {
                                     printf("Invalid Theora packet! (line #%i): %i\n", __LINE__, ret);
                                     //delete soc;
@@ -766,6 +781,7 @@ int main()
                             if(th_hdr >= 3)
                             {
                                 puts("allocating decoder");
+                                if(vctx) th_decode_free(vctx);
                                 vctx = th_decode_alloc(&vidinfo, vidsetup);
                                 if(!vctx)
                                 {
@@ -835,7 +851,6 @@ int main()
         
         if(!soc) goto reloop;
     }
-    nosoc:
     
     gfxFlushBuffers();
     gfxSwapBuffers();

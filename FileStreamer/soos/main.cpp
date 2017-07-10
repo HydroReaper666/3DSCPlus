@@ -35,8 +35,15 @@ typedef int SOCKET;
 #include <ws2tcpip.h>
 //#include <mstcpip.h>
 typedef int socklen_t;
-#define errno WSAGetLastError()
+//#define errno WSAGetLastError()
+
+#include <tlhelp32.h>
+#include <dwmapi.h>
 #endif
+
+
+#include <theora/theoraenc.h>
+#include <theora/theora.h>
 
 #include <exception>
 
@@ -45,20 +52,121 @@ using namespace std;
 
 //#define errfail(wut) { printf(#wut " fail (line #%03i): (%i) %s\n", __LINE__, errno, strerror(errno)); goto killswitch; }
 #ifdef WIN32
-#define errfail(func)\
+#define wsafail(func)\
 {\
     wchar_t *s = NULL;\
     FormatMessageW\
     (\
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,\
-        NULL, errno, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&s, 0, NULL\
+        NULL, WSAGetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&s, 0, NULL\
     );\
-    printf(#func " fail (line #%03i): (%i) %S\n", __LINE__, errno, s);\
+    printf(#func " fail (line #%03i): (%i) %S\n", __LINE__, WSAGetLastError(), s);\
     LocalFree(s);\
     goto killswitch;\
 }
+
+#define winfail(func)\
+{\
+    wchar_t *s = NULL;\
+    FormatMessageW\
+    (\
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,\
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&s, 0, NULL\
+    );\
+    printf(#func " fail (line #%03i): (%i) %S\n", __LINE__, GetLastError(), s);\
+    LocalFree(s);\
+    goto killswitch;\
+}
+
 #else
+#define wsafail(func) { printf(#func " fail (line #%03i): (%i) %s\n", __LINE__, errno, strerror(errno)); goto killswitch; }
+#endif
+
 #define errfail(func) { printf(#func " fail (line #%03i): (%i) %s\n", __LINE__, errno, strerror(errno)); goto killswitch; }
+
+
+#ifdef WIN32
+HWND wnd = nullptr;
+
+struct handle_data
+{
+    unsigned long process_id;
+    unsigned int refc;
+    int flags;
+    char* title;
+    HWND best_handle;
+};
+
+BOOL is_main_window(HWND handle)
+{   
+    return GetWindow(handle, GW_OWNER) == (HWND)0 && IsWindowVisible(handle);
+}
+
+BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam)
+{
+    struct handle_data* data = (struct handle_data*)lParam;
+    unsigned long process_id = 0;
+    GetWindowThreadProcessId(handle, &process_id);
+    if (data->process_id != process_id) return TRUE;
+    if ((data->flags & 1) && !is_main_window(handle)) return TRUE;
+    
+    if(data->title)
+    {
+        char buf[0x80];
+        GetWindowText(handle, buf, 0x80);
+        printf("- - Title: '%s'\n", buf);
+        if(strstr(buf, data->title) != buf) return TRUE;
+    }
+    
+    if(data->refc--) return TRUE;
+    
+    data->best_handle = handle;
+    return FALSE;   
+}
+
+HWND find_window(unsigned long process_id, unsigned int nth, int flags, char* title)
+{
+    struct handle_data data;
+    data.process_id = process_id;
+    data.best_handle = 0;
+    data.refc = nth;
+    data.flags = flags;
+    data.title = title;
+    EnumWindows(enum_windows_callback, (LPARAM)&data);
+    return data.best_handle;
+}
+
+HWND getwin(char* procname, unsigned int nth, int flags, char* title)
+{
+    printf("Finding process: PN=%s T='%s' N=%i F=%i\n", procname ? procname : "<nullptr>", title ? title : "<nullptr>", nth, flags);
+    
+    PROCESSENTRY32 pe;
+    HANDLE snapshot;
+    HWND wnd;
+    
+    pe.dwSize = sizeof(pe);
+    
+    snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    
+    wnd = 0;
+
+    if(Process32First(snapshot, &pe))
+    {
+        while(Process32Next(snapshot, &pe))
+        {
+            if(!procname || strstr(pe.szExeFile, procname) == pe.szExeFile)
+            {
+                printf("- %04i: %s\n", pe.th32ProcessID, pe.szExeFile);
+                wnd = find_window(pe.th32ProcessID, nth, flags, title);
+                
+                if(wnd) break;
+            }
+        }
+    }
+    CloseHandle(snapshot);
+    
+    return wnd;
+}
 #endif
 
 
@@ -201,7 +309,142 @@ bufsoc* soc = 0;
 bufsoc::packet* p = 0;
 int ret = 0;
 
+ogg_page ogb;
+ogg_stream_state ogv;
+ogg_packet ogp;
 
+th_info vidinfo;
+th_comment vidcomm;
+th_ycbcr_buffer vidbuf;
+th_enc_ctx* enc = 0;
+
+u8 imgbuf[240 * 320 * 4];
+u8 yuuy[256 * 320];
+u8 uuuy[256 * 320];
+u8 vuuy[256 * 320];
+
+
+void rgb3_yuv(u8* y, u8* u, u8* v, u8* src)
+{
+    for(size_t line = 0; line != 320; line++)
+    {
+        if(!(line & 1))
+        {
+            size_t x = 240;
+            
+            while(1)
+            {
+                x--;
+                
+                size_t o = ((x * 320) + line) * 3;
+                uint8_t r = src[o];
+                uint8_t g = src[o + 1];
+                uint8_t b = src[o + 2];
+
+                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+
+                *(u++) = ((-38*r + -74*g + 112*b) >> 8) + 128;
+                *(v++) = ((112*r + -94*g + -18*b) >> 8) + 128;
+                
+                
+                o -= 320 * 3;
+                x--;
+                
+                r = src[o];
+                g = src[o + 1];
+                b = src[o + 2];
+
+                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+                
+                if(!x) break;
+            }
+            
+            y += 16;
+            u += 8;
+            v += 8;
+        }
+        else
+        {
+            size_t x = 239;
+            size_t o = ((x * 320) + line) * 3;
+            
+            do
+            {
+                uint8_t r = src[o];
+                uint8_t g = src[o + 1];
+                uint8_t b = src[o + 2];
+                
+                o -= 320 * 3;
+
+                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+            }
+            while(x--);
+            
+            y += 16;
+        }
+    }
+}
+
+void rgb4_yuv(u8* y, u8* u, u8* v, u8* src)
+{
+    for(size_t line = 0; line != 320; line++)
+    {
+        if(!(line & 1))
+        {
+            size_t x = 240;
+            
+            while(1)
+            {
+                x--;
+                
+                size_t o = ((x * 320) + line) * 4;
+                uint8_t r = src[o + 2];
+                uint8_t g = src[o + 1];
+                uint8_t b = src[o + 0];
+
+                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+
+                *(u++) = ((-38*r + -74*g + 112*b) >> 8) + 128;
+                *(v++) = ((112*r + -94*g + -18*b) >> 8) + 128;
+                
+                
+                o -= 320 * 4;
+                x--;
+                
+                r = src[o];
+                g = src[o + 1];
+                b = src[o + 2];
+
+                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+                
+                if(!x) break;
+            }
+            
+            y += 16;
+            u += 8;
+            v += 8;
+        }
+        else
+        {
+            size_t x = 239;
+            size_t o = ((x * 320) + line) * 4;
+            
+            do
+            {
+                uint8_t r = src[o];
+                uint8_t g = src[o + 1];
+                uint8_t b = src[o + 2];
+                
+                o -= 320 * 4;
+
+                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+            }
+            while(x--);
+            
+            y += 16;
+        }
+    }
+}
 
 
 int main(int argc, char** argv)
@@ -210,7 +453,7 @@ int main(int argc, char** argv)
     {
         printusage:
         
-        printf("%s < - | + >\n%s <FILE> <IP Address>\n", argv[0], argv[0]);
+        printf("%s <FILE | -> <IP Address>\n%s + <IP Address> [exe]", argv[0], argv[0]);
         return 1;
     }
     
@@ -227,12 +470,58 @@ int main(int argc, char** argv)
                 puts("using stdin");
                 f = stdin;
             }
+            else if(argv[1][0] == '+')
+            {
+                puts("screen capture");
+                f = nullptr;
+            }
+            else
+            {
+                puts("No valid input found");
+                return 1;
+            }
         }
         else
-            errfail(fopen);
+        {
+            puts("Invalid filename");
+        }
     }
     
-    if(argc <3) goto printusage;
+    if(!f)
+    {
+#ifdef WIN32
+        if(argc > 3)
+        {
+            puts("Finding window");
+            
+            int nth = 0;
+            int flag = 0;
+            
+            char* p = argv[3];
+            char c = *p;
+            if(c >= '0' && c <= '9')
+            {
+                nth = c - '0';
+                c = *(++p);
+            }
+            else if(c == '*') { flag |= 1; c = *(++p); }
+            
+            if     (c == ':') wnd = getwin(nullptr, nth, flag, p + 1);
+            else if(c == '!') wnd = getwin(p + 1, nth, flag, nullptr);
+            else              wnd = getwin(p + 1, nth, flag, p + 1);
+            
+            printf("Result HWND: %08X\n", wnd);
+            puts("press ENTER to continue");
+            getchar();
+            
+            if(!wnd)
+            {
+                printf("No matching window for pattern '%s'\n", argv[3]);
+                return 1;
+            }
+        }
+#endif
+    }
     
     if(!inet_pton4(argv[2], (unsigned char*)&sao.sin_addr))
     {
@@ -251,21 +540,94 @@ int main(int argc, char** argv)
         return 1;
     }
     
+    BITMAP bmp;
+    
+    //TODO find window
+    
+    HDC srcdc = GetDC(wnd);
+    HDC memdc = CreateCompatibleDC(srcdc);
+    HBITMAP img = CreateCompatibleBitmap(srcdc, 320, 240);
+    SelectObject(memdc, img);
+    //SetStretchBltMode(memdc,HALFTONE);
+    SetStretchBltMode(memdc,COLORONCOLOR);
+    
+    
 #endif
     
     sao.sin_family = AF_INET;
     sao.sin_port = htons(port);
     
     sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-    if(sock <= 0) errfail(socket);
+    if(sock <= 0) wsafail(socket);
     soc = new bufsoc(sock, 0x200000);
     p = soc->pack();
     
     ret = connect(sock, (sockaddr*)&sao, sizeof_sao);
-    if(ret < 0) errfail(connect); 
+    if(ret < 0) wsafail(connect); 
     
     puts("Connected");
     
+    if(!f)
+    {
+        puts("Initing video encoder");
+        
+        long dummy = 8 * 1024 * 400;
+        
+        ogg_stream_init(&ogv, 0x6956F00F);
+        
+        th_info_init(&vidinfo);
+        vidinfo.frame_width = 240;
+        vidinfo.frame_height = 320;
+        vidinfo.pic_width = 240;
+        vidinfo.pic_height = 320;
+        vidinfo.pixel_fmt = TH_PF_420;
+        vidinfo.pic_x = 0;
+        vidinfo.pic_y = 0;
+        vidinfo.target_bitrate = dummy;
+        vidinfo.fps_numerator = 1;
+        vidinfo.fps_denominator = 60;
+        vidinfo.aspect_numerator = 1;
+        vidinfo.aspect_denominator = 1;
+        
+        puts("decoder_alloc");
+        enc = th_encode_alloc(&vidinfo);
+        if(!enc) errfail(th_encode_alloc);
+        
+#define thfail(wat) if((thr = th_encode_ctl(enc, wat, &dummy, sizeof(dummy)))) printf("th_encode_ctl(%s) fail: %i\n", #wat, thr);
+        
+        int thr = 0;
+        
+        thfail(TH_ENCCTL_SET_BITRATE);
+        dummy >>= 8;
+        thfail(TH_ENCCTL_SET_RATE_BUFFER);
+        dummy = 2;
+        thfail(TH_ENCCTL_SET_SPLEVEL);
+        dummy = TH_RATECTL_DROP_FRAMES | TH_RATECTL_CAP_OVERFLOW | TH_RATECTL_CAP_UNDERFLOW;
+        thfail(TH_ENCCTL_SET_RATE_FLAGS);
+        
+#undef thfail
+        
+        th_comment_init(&vidcomm);
+        vidcomm.vendor = "FileStreamer/PaintController by MarcusD v0.0_dev1";
+        
+        puts("header stuff");
+        while(th_encode_flushheader(enc, &vidcomm, &ogp) > 0)
+            ogg_stream_packetin(&ogv, &ogp);
+        
+        puts("ech");
+        while(ogg_stream_pageout(&ogv, &ogb) > 0 || ogg_stream_flush(&ogv, &ogb) > 0)
+        {
+            printf("Writing header packet: 0%08X 0x%08X\n", ogb.header_len, ogb.body_len);
+            memcpy(&p->data[0], ogb.header, ogb.header_len);
+            memcpy(&p->data[ogb.header_len], ogb.body, ogb.body_len);
+            p->size = ogb.header_len + ogb.body_len;
+            p->packetid = 2;
+            if(soc->wribuf() < p->size) wsafail(soc->wribuf);
+        }
+        
+        puts("press ENTER to continue");
+        getchar();
+    }
     
     
     while(true)
@@ -273,7 +635,7 @@ int main(int argc, char** argv)
         if(!soc->avail()) goto nocoffei;
         
         ret = soc->readbuf();
-        if(ret <= 0) errfail(soc->readbuf);
+        if(ret <= 0) wsafail(soc->readbuf);
         
         switch(p->packetid)
         {
@@ -300,15 +662,83 @@ int main(int argc, char** argv)
         nocoffei:
         
         p->packetid = 2;
-        p->size = fread(&p->data[0], 1, 0x8000, f);
-        if(p->size <= 0)
-        {
-            puts("EOF reached");
-            //getchar();
-            break;
-        }
         
-        if(soc->wribuf() < p->size) errfail(soc->wribuf);
+        if(f)
+        {
+            p->size = fread(&p->data[0], 1, 0x8000, f);
+            if(p->size <= 0)
+            {
+                puts("EOF reached");
+                //getchar();
+                break;
+            }
+            
+            if(soc->wribuf() < p->size) wsafail(soc->wribuf);
+        }
+        else
+        {
+            RECT rekt;
+            if(wnd) GetClientRect(wnd, &rekt);
+            else
+            {
+                rekt.left = 0;
+                rekt.right = GetSystemMetrics(SM_CXSCREEN);
+                rekt.top = 0;
+                rekt.bottom = GetSystemMetrics(SM_CYSCREEN);
+            }
+            
+            if(!StretchBlt(memdc, 0, 0, 320, 240, srcdc, rekt.left, rekt.top, rekt.right - rekt.left, rekt.bottom - rekt.top, SRCCOPY))
+            {
+                winfail(StretchBlt);
+            }
+            
+            int imgs = GetBitmapBits(img, 240 * 320 * 4, imgbuf);
+            imgs /= 240 * 320;
+            //printf("bpp: %i\n", imgs);
+            
+            if(imgs == 3)
+            {
+                rgb3_yuv(yuuy, uuuy, vuuy, imgbuf);
+            }
+            else if(imgs == 4)
+            {
+                rgb4_yuv(yuuy, uuuy, vuuy, imgbuf);
+            }
+            else
+            {
+                printf("Invalid Bpp: %i\n", imgs);
+                winfail(GetBitmapBits);
+            }
+            
+            vidbuf[0].width = 240;
+            vidbuf[1].width = 120;
+            vidbuf[2].width = 120;
+            vidbuf[0].height = 320;
+            vidbuf[1].height = 160;
+            vidbuf[2].height = 160;
+            vidbuf[0].stride = 256;
+            vidbuf[1].stride = 128;
+            vidbuf[2].stride = 128;
+            vidbuf[0].data = yuuy;
+            vidbuf[1].data = uuuy;
+            vidbuf[2].data = vuuy;
+            
+            if(th_encode_ycbcr_in(enc, vidbuf)) errfail(th_encode_ycbcr_in);
+            
+            while(th_encode_packetout(enc, 0, &ogp) > 0)
+                ogg_stream_packetin(&ogv, &ogp);
+            
+            if(ogv.body_fill >= 0x400)
+            if(ogg_stream_flush(&ogv, &ogb) > 0)
+            {
+                printf("Writing data page: 0%08X\n", ogb.body_len);
+                memcpy(&p->data[0], ogb.header, ogb.header_len);
+                memcpy(&p->data[ogb.header_len], ogb.body, ogb.body_len);
+                p->size = ogb.header_len + ogb.body_len;
+                p->packetid = 2;
+                if(soc->wribuf() < p->size) wsafail(soc->wribuf);
+            }
+        }
         
         /*if(f != stdin)
         {

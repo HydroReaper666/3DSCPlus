@@ -33,7 +33,7 @@ CFLAGS	:=	-g -Wall -O0 \
                     -Wno-format -Wno-write-strings -Wno-unused-variable -Wno-unused-value 
 
 ifeq ($(OS),Windows_NT)
-CFLAGS	+= -m32
+CFLAGS	+= 
 POSTFIX := exe
 else
 POSTFIX := elf
@@ -42,11 +42,12 @@ endif
 CFLAGS	+=	$(INCLUDE) -D_PC -DBUILDTIME=\"$(DT)\"
 CXXFLAGS	:= $(CFLAGS) -Wno-reorder -fno-rtti -std=gnu++11
 
+LDFLAGS	=   -g
+
+LIBS	:= -ltheora -logg -lm
+
 ifeq ($(OS),Windows_NT)
-LDFLAGS	=   -g -m32
-LIBS	:= -lws2_32 -lwsock32 -lmingw32 -mconsole -mwindows -static-libgcc -static-libstdc++
-else
-LIBS	:= 
+LIBS	+= -lgdi32 -lws2_32 -lwsock32 -lmingw32 -mconsole -mwindows -static-libgcc -static-libstdc++
 endif
 
 
