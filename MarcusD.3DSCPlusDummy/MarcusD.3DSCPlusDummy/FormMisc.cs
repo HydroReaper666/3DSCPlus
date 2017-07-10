@@ -28,14 +28,13 @@ namespace MarcusD._3DSCPlusDummy
             dmy.abs = checkABS.Checked;
         }
 
-        private void btnHwndOsu_Click(object sender, EventArgs e)
+        private void btnHwndProc_Click(object sender, EventArgs e)
         {
-            Process[] proc = Process.GetProcessesByName("osu!");
-            MessageBox.Show(proc.Length + "");
-            if(proc.Length > 0)
-            {
-                dmy.hwnd = proc[0].MainWindowHandle;
-            }
+            Process[] proc = Process.GetProcessesByName(textProcess.Text);
+
+            int offs = (int)numProcOffs.Value;
+            if(offs >= proc.Length) offs = proc.Length - 1;
+            if(offs != -1) dmy.hwnd = proc[offs].MainWindowHandle;
         }
 
         private void btnHwndNull_Click(object sender, EventArgs e)

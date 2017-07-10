@@ -60,6 +60,8 @@
             this.btnAltEditor = new System.Windows.Forms.Button();
             this.btnMisc = new System.Windows.Forms.Button();
             this.lblCurrConf = new System.Windows.Forms.Label();
+            this.btnSubcfgSave = new System.Windows.Forms.Button();
+            this.btnSubcfgLoad = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numPort)).BeginInit();
             this.SuspendLayout();
             // 
@@ -430,6 +432,26 @@
             this.lblCurrConf.Text = "???";
             this.lblCurrConf.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
+            // btnSubcfgSave
+            // 
+            this.btnSubcfgSave.Location = new System.Drawing.Point(145, 134);
+            this.btnSubcfgSave.Name = "btnSubcfgSave";
+            this.btnSubcfgSave.Size = new System.Drawing.Size(89, 24);
+            this.btnSubcfgSave.TabIndex = 16;
+            this.btnSubcfgSave.Text = "Save keyconfig";
+            this.btnSubcfgSave.UseVisualStyleBackColor = true;
+            this.btnSubcfgSave.Click += new System.EventHandler(this.btnSubcfgSave_Click);
+            // 
+            // btnSubcfgLoad
+            // 
+            this.btnSubcfgLoad.Location = new System.Drawing.Point(145, 161);
+            this.btnSubcfgLoad.Name = "btnSubcfgLoad";
+            this.btnSubcfgLoad.Size = new System.Drawing.Size(89, 24);
+            this.btnSubcfgLoad.TabIndex = 16;
+            this.btnSubcfgLoad.Text = "Load keyconfig";
+            this.btnSubcfgLoad.UseVisualStyleBackColor = true;
+            this.btnSubcfgLoad.Click += new System.EventHandler(this.btnSubcfgLoad_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -438,6 +460,8 @@
             this.Controls.Add(this.lblCurrConf);
             this.Controls.Add(this.btnMisc);
             this.Controls.Add(this.btnAltEditor);
+            this.Controls.Add(this.btnSubcfgLoad);
+            this.Controls.Add(this.btnSubcfgSave);
             this.Controls.Add(this.btnCfgLoad);
             this.Controls.Add(this.btnCfgSave);
             this.Controls.Add(this.btnRebindSD);
@@ -513,6 +537,8 @@
         private System.Windows.Forms.Button btnAltEditor;
         private System.Windows.Forms.Button btnMisc;
         private System.Windows.Forms.Label lblCurrConf;
+        private System.Windows.Forms.Button btnSubcfgSave;
+        private System.Windows.Forms.Button btnSubcfgLoad;
     }
 }
 

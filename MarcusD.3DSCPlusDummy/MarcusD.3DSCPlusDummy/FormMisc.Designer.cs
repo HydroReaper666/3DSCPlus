@@ -29,8 +29,11 @@
         private void InitializeComponent()
         {
             this.checkABS = new System.Windows.Forms.CheckBox();
-            this.btnHwndOsu = new System.Windows.Forms.Button();
+            this.btnHwndProc = new System.Windows.Forms.Button();
             this.btnHwndNull = new System.Windows.Forms.Button();
+            this.numProcOffs = new System.Windows.Forms.NumericUpDown();
+            this.textProcess = new System.Windows.Forms.TextBox();
+            ((System.ComponentModel.ISupportInitialize)(this.numProcOffs)).BeginInit();
             this.SuspendLayout();
             // 
             // checkABS
@@ -44,19 +47,19 @@
             this.checkABS.UseVisualStyleBackColor = true;
             this.checkABS.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
-            // btnHwndOsu
+            // btnHwndProc
             // 
-            this.btnHwndOsu.Location = new System.Drawing.Point(12, 35);
-            this.btnHwndOsu.Name = "btnHwndOsu";
-            this.btnHwndOsu.Size = new System.Drawing.Size(93, 23);
-            this.btnHwndOsu.TabIndex = 1;
-            this.btnHwndOsu.Text = "find osu";
-            this.btnHwndOsu.UseVisualStyleBackColor = true;
-            this.btnHwndOsu.Click += new System.EventHandler(this.btnHwndOsu_Click);
+            this.btnHwndProc.Location = new System.Drawing.Point(179, 61);
+            this.btnHwndProc.Name = "btnHwndProc";
+            this.btnHwndProc.Size = new System.Drawing.Size(93, 20);
+            this.btnHwndProc.TabIndex = 1;
+            this.btnHwndProc.Text = "find process";
+            this.btnHwndProc.UseVisualStyleBackColor = true;
+            this.btnHwndProc.Click += new System.EventHandler(this.btnHwndProc_Click);
             // 
             // btnHwndNull
             // 
-            this.btnHwndNull.Location = new System.Drawing.Point(12, 64);
+            this.btnHwndNull.Location = new System.Drawing.Point(179, 6);
             this.btnHwndNull.Name = "btnHwndNull";
             this.btnHwndNull.Size = new System.Drawing.Size(93, 23);
             this.btnHwndNull.TabIndex = 2;
@@ -64,16 +67,34 @@
             this.btnHwndNull.UseVisualStyleBackColor = true;
             this.btnHwndNull.Click += new System.EventHandler(this.btnHwndNull_Click);
             // 
+            // numProcOffs
+            // 
+            this.numProcOffs.Location = new System.Drawing.Point(12, 61);
+            this.numProcOffs.Name = "numProcOffs";
+            this.numProcOffs.Size = new System.Drawing.Size(161, 20);
+            this.numProcOffs.TabIndex = 3;
+            // 
+            // textProcess
+            // 
+            this.textProcess.Location = new System.Drawing.Point(12, 35);
+            this.textProcess.Name = "textProcess";
+            this.textProcess.Size = new System.Drawing.Size(260, 20);
+            this.textProcess.TabIndex = 4;
+            this.textProcess.Text = "osu!";
+            // 
             // FormMisc
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 262);
+            this.Controls.Add(this.textProcess);
+            this.Controls.Add(this.numProcOffs);
             this.Controls.Add(this.btnHwndNull);
-            this.Controls.Add(this.btnHwndOsu);
+            this.Controls.Add(this.btnHwndProc);
             this.Controls.Add(this.checkABS);
             this.Name = "FormMisc";
             this.Text = "FormMisc";
+            ((System.ComponentModel.ISupportInitialize)(this.numProcOffs)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -82,7 +103,9 @@
         #endregion
 
         private System.Windows.Forms.CheckBox checkABS;
-        private System.Windows.Forms.Button btnHwndOsu;
+        private System.Windows.Forms.Button btnHwndProc;
         private System.Windows.Forms.Button btnHwndNull;
+        private System.Windows.Forms.NumericUpDown numProcOffs;
+        private System.Windows.Forms.TextBox textProcess;
     }
 }

@@ -34,6 +34,9 @@ using System.Drawing;
         public int altkey = 1 << 11;
         public Boolean dcexit = false;
         public int deadzone = 12;
+        public int divx = 32;
+        public int divy = 32;
+        public int mmode = 1;
 
         int speed = 1;
         int currspeed = 1;
@@ -50,8 +53,8 @@ using System.Drawing;
         //float spx = 65535 / 320.0F;
         //float spy = 65535 / 240.0F;
 
-        float spx = 1366 / 320.0F;
-        float spy = 768 / 240.0F;
+        //float spx = 1366 / 320.0F;
+        //float spy = 768 / 240.0F;
 
         public class RektButton
         {
@@ -327,7 +330,7 @@ using System.Drawing;
                         if(Math.Abs(sx) < deadzone) sx = 0;
                         if(Math.Abs(sy) < deadzone) sy = 0;
 
-                        Console.WriteLine("K: " + currkey + " T: " + tx + "x" + ty + " C: " + cx + "x" + cy + " S: " + sx + "x" + sy);
+                        Console.WriteLine("K: " + currkey.ToString("X8") + " T: " + tx.ToString("+000;-000;0000") + "x" + ty.ToString("+000;-000;0000") + " C: " + cx.ToString("+000;-000;0000") + "x" + cy.ToString("+000;-000;0000") + " S: " + sx.ToString("+000;-000;0000") + "x" + sy.ToString("+000;-000;0000"));
 
                         kdown = currkey & ~kheld;
                         kup = ~currkey & kheld;
@@ -410,7 +413,8 @@ using System.Drawing;
 
                         //TODO config option
 
-                        NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), cx * currspeed / 32, -cy * currspeed / 32, 0, 0);
+                        if(mmode == 1) NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), cx * currspeed / divx, -cy * currspeed / divy, 0, 0);
+                        if(mmode == 2) NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), sx * currspeed / divx, -sy * currspeed / divy, 0, 0);
 
                         break;
 
