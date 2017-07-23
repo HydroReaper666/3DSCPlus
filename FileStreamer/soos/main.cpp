@@ -548,7 +548,7 @@ int main(int argc, char** argv)
     HDC memdc = CreateCompatibleDC(srcdc);
     HBITMAP img = CreateCompatibleBitmap(srcdc, 320, 240);
     SelectObject(memdc, img);
-    //SetStretchBltMode(memdc,HALFTONE);
+    //SetStretchBltMode(memdc,HALFTONE); SetBrushOrgEx(memdc, 0, 0, NULL);
     SetStretchBltMode(memdc,COLORONCOLOR);
     
     

@@ -151,10 +151,10 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-ifeq ($(strip $(NO_SMDH)),)
 .PHONY: all
-all	:	$(OUTPUT).cia
-endif
+all	:	$(OUTPUT).cia #$(OUTPUT).3dsx
+
+$(OUTPUT).3dsx: $(OUTPUT).elf $(OUTPUT).smdh
 
 $(OUTPUT).elf	:	$(OFILES)
 
