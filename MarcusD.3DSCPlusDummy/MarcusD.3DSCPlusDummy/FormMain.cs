@@ -15,7 +15,7 @@ namespace MarcusD._3DSCPlusDummy
     {
         Dummy dmy = null;
 
-        String path = "3dsp.ini";
+        String path = "default.ini";
 
         public FormMain()
         {
@@ -82,15 +82,14 @@ namespace MarcusD._3DSCPlusDummy
             sect = ini.GetSection("general");
             sect["IP"] = textIP.Text.Trim();
             sect["port"] = numPort.Value.ToString();
-
-            KeyconfigExport(ini);
+            sect["kconf"] = path;
         }
 
         private void btnCfgLoad_Click(object sender, EventArgs e)
         {
             dmy.rekts.Clear();
 
-            if (File.Exists("3dsp.bin"))
+            if(File.Exists("3dsp.bin"))
             {
                 using (FileStream fs = File.OpenRead("3dsp.bin"))
                 {
@@ -114,9 +113,13 @@ namespace MarcusD._3DSCPlusDummy
                     }
                 }
 
+                btnCfgSave.PerformClick();
+                Application.DoEvents();
+
+                KeyconfigExport(new Ini(path));
+
                 File.Delete("3dsp.bin");
 
-                btnCfgSave.PerformClick();
                 btnCfgLoad.PerformClick();
 
                 return;
@@ -128,8 +131,11 @@ namespace MarcusD._3DSCPlusDummy
             sect = ini.GetSection("general");
             textIP.Text = sect.Read("IP", dmy.ipaddr);
             numPort.Value = (UInt16)sect.ReadInt("port", dmy.port);
+            path = sect.Read("kconf", path);
 
             KeyconfigImport(ini);
+
+            if(File.Exists(path)) KeyconfigImport(new Ini(path));
         }
 
         private void FormMain_Load(object sender, EventArgs e)
@@ -188,28 +194,36 @@ namespace MarcusD._3DSCPlusDummy
         {
             if (kb == null) return;
 
-            kb.edown.Clear();
-            kb.eheld.Clear();
-            kb.eup.Clear();
-
             int cnt = 0;
 
             cnt = sect.ReadInt("edc");
-            for (int i = 0; i != cnt; i++)
+            if(cnt > 0)
             {
-                kb.edown.Add(sect.ReadStruct<Dummy.Keybinding.Event>("edc" + i).Value);
+                kb.edown.Clear();
+                for(int i = 0; i != cnt; i++)
+                {
+                    kb.edown.Add(sect.ReadStruct<Dummy.Keybinding.Event>("edc" + i).Value);
+                }
             }
 
             cnt = sect.ReadInt("ehc");
-            for (int i = 0; i != cnt; i++)
+            if(cnt > 0)
             {
-                kb.eheld.Add(sect.ReadStruct<Dummy.Keybinding.Event>("ehc" + i).Value);
+                kb.eheld.Clear();
+                for(int i = 0; i != cnt; i++)
+                {
+                    kb.eheld.Add(sect.ReadStruct<Dummy.Keybinding.Event>("ehc" + i).Value);
+                }
             }
 
             cnt = sect.ReadInt("euc");
-            for (int i = 0; i != cnt; i++)
+            if(cnt > 0)
             {
-                kb.eup.Add(sect.ReadStruct<Dummy.Keybinding.Event>("euc" + i).Value);
+                kb.eup.Clear();
+                for(int i = 0; i != cnt; i++)
+                {
+                    kb.eup.Add(sect.ReadStruct<Dummy.Keybinding.Event>("euc" + i).Value);
+                }
             }
         }
 
@@ -270,7 +284,7 @@ namespace MarcusD._3DSCPlusDummy
             Ini.IniSection sect = ini.GetSection("general");
 
             sect["abs"] = dmy.abs ? "1" : "0";
-            sect["altkey"] = dmy.altkey.ToString("X8");
+            sect["altk"] = dmy.altkey.ToString("X8");
             sect["mmode"] = dmy.mmode.ToString();
 
             sect["rekts"] = dmy.rekts.Count.ToString();
@@ -302,6 +316,7 @@ namespace MarcusD._3DSCPlusDummy
             sfd.DereferenceLinks = true;
             sfd.OverwritePrompt = true;
             sfd.ValidateNames = true;
+            sfd.FileName = path;
 
             if(sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -312,7 +327,11 @@ namespace MarcusD._3DSCPlusDummy
 
         private void btnSubcfgLoad_Click(object sender, EventArgs e)
         {
-            if(dmy.running) return;
+            if(dmy.running)
+            {
+                MessageBox.Show("Please disconnect before loaring a new keyconfig!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             OpenFileDialog sfd = new OpenFileDialog();
             sfd.AddExtension = true;
@@ -322,8 +341,11 @@ namespace MarcusD._3DSCPlusDummy
             sfd.DereferenceLinks = true;
             sfd.ReadOnlyChecked = true;
             sfd.ValidateNames = true;
+            sfd.FileName = path;
 
             if(sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            path = sfd.FileName;
 
             Ini ini = new Ini(sfd.FileName);
 

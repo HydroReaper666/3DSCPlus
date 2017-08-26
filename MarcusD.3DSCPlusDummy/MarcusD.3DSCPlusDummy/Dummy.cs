@@ -205,13 +205,14 @@ using System.Drawing;
             IPEndPoint sockaddr_in = new IPEndPoint(IPAddress.Parse(ipaddr), port);
             EndPoint dummyaddr_in = new IPEndPoint(IPAddress.Any, port);
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            sock.Bind(dummyaddr_in);
 
             List<byte> obuf = new List<byte>();
             byte[] buf = new byte[0x1000];
 
             int timeout = 0;
             Boolean connected = false;
+
+            int recvret = -1;
 
             Int16 px = 0, py = 0;
 
@@ -276,17 +277,25 @@ using System.Drawing;
                     continue;
                 }
 
-                if(sock.Poll(0, SelectMode.SelectError)) continue;
+                if(sock.Poll(0, SelectMode.SelectError))
+                {
+                    Object obj = sock.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error);
+                    Console.WriteLine("Error with type " + obj.GetType().FullName + " received");
+                    continue;
+                }
 
                 try
                 {
-                    sock.ReceiveFrom(buf, ref dummyaddr_in);
+                    recvret = sock.ReceiveFrom(buf, ref dummyaddr_in);
                 }
                 catch(Exception e)
                 {
                     Console.WriteLine(e.ToString());
                     continue;
                 }
+
+                if(recvret <= 0) continue;
+
 
                 if(!(dummyaddr_in is IPEndPoint))
                 {
@@ -330,7 +339,7 @@ using System.Drawing;
                         if(Math.Abs(sx) < deadzone) sx = 0;
                         if(Math.Abs(sy) < deadzone) sy = 0;
 
-                        Console.WriteLine("K: " + currkey.ToString("X8") + " T: " + tx.ToString("+000;-000;0000") + "x" + ty.ToString("+000;-000;0000") + " C: " + cx.ToString("+000;-000;0000") + "x" + cy.ToString("+000;-000;0000") + " S: " + sx.ToString("+000;-000;0000") + "x" + sy.ToString("+000;-000;0000"));
+                        //Console.WriteLine("K: " + currkey.ToString("X8") + " T: " + tx.ToString("+000;-000;0000") + "x" + ty.ToString("+000;-000;0000") + " C: " + cx.ToString("+000;-000;0000") + "x" + cy.ToString("+000;-000;0000") + " S: " + sx.ToString("+000;-000;0000") + "x" + sy.ToString("+000;-000;0000"));
 
                         kdown = currkey & ~kheld;
                         kup = ~currkey & kheld;
@@ -347,57 +356,57 @@ using System.Drawing;
                         }
 
                         //special case
-                        if((kdown & (1 << 20)) != 0) //KEY_TOUCH
+                        if((kheld & (1 << 20)) != 0) //KEY_TOUCH
                         {
+                            if((mmode & 4) == 0)
+                            {
+                                if(abs)
+                                {
+                                    NativeInput.POINT pt;
+                                    pt.X = 0;
+                                    pt.Y = 0;
+
+                                    NativeInput.RECT rect;
+                                    if(hwnd == IntPtr.Zero)
+                                        rect = Screen.PrimaryScreen.Bounds;
+                                    else
+                                        NativeInput.GetClientRect(hwnd, out rect);
+
+                                    pt.X = rect.Left;
+                                    pt.Y = rect.Top;
+                                    pt.X = +(int)(rect.Width / 320.0F * tx);
+                                    pt.Y = +(int)(rect.Height / 240.0F * ty);
+
+
+                                    NativeInput.ClientToScreen(hwnd, ref pt);
+
+                                    //NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE | NativeInput.MouseEventFlags.MOVE_ABS), pt.X, pt.Y, 0, 0);
+                                    Cursor.Position = pt;
+                                }
+                                else
+                                    NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), (tx - px) * currspeed, (ty - py) * currspeed, 0, 0);
+                            }
+
                             px = tx;
                             py = ty;
 
-                            if(altcmd != 0)
+                            if((kdown & (1 << 20)) != 0)
                             {
-                                Rectangle cur = new Rectangle(tx, ty, 1, 1);
-                                foreach(Dummy.RektButton rekt in rekts)
+                                if(altcmd != 0)
                                 {
-                                    if(rekt.rekt.IntersectsWith(cur))
+                                    Rectangle cur = new Rectangle(tx, ty, 1, 1);
+                                    foreach(Dummy.RektButton rekt in rekts)
                                     {
-                                        currekt = rekt;
-                                        ProcessKDown(currekt.kb);
-                                        break;
+                                        if(rekt.rekt.IntersectsWith(cur))
+                                        {
+                                            currekt = rekt;
+                                            ProcessKDown(currekt.kb);
+                                            break;
+                                        }
                                     }
                                 }
                             }
-                        }
-                        else if((kheld & (1 << 20)) != 0) //KEY_TOUCH
-                        {
-                            if (abs)
-                            {
-                                NativeInput.POINT pt;
-                                pt.X = 0;
-                                pt.Y = 0;
-
-                                NativeInput.RECT rect;
-                                if(hwnd == IntPtr.Zero)
-                                    rect = Screen.PrimaryScreen.Bounds;
-                                else
-                                    NativeInput.GetClientRect(hwnd, out rect);
-
-                                pt.X = rect.Left;
-                                pt.Y = rect.Top;
-                                pt.X =+ (int)(rect.Width / 320.0F * tx);
-                                pt.Y =+ (int)(rect.Height / 240.0F * ty);
-
-
-                                NativeInput.ClientToScreen(hwnd, ref pt);
-
-                                //NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE | NativeInput.MouseEventFlags.MOVE_ABS), pt.X, pt.Y, 0, 0);
-                                Cursor.Position = pt;
-                            }
-                            else
-                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), (tx - px) * currspeed, (ty - py) * currspeed, 0, 0);
-
-                            px = tx;
-                            py = ty;
-
-                            if(currekt != null) ProcessKHeld(currekt.kb);
+                            else if(currekt != null) ProcessKHeld(currekt.kb);
                         }
                         else if((kup & (1 << 20)) != 0) //KEY_TOUCH
                         {
@@ -413,8 +422,15 @@ using System.Drawing;
 
                         //TODO config option
 
-                        if(mmode == 1) NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), cx * currspeed / divx, -cy * currspeed / divy, 0, 0);
-                        if(mmode == 2) NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), sx * currspeed / divx, -sy * currspeed / divy, 0, 0);
+                        switch(mmode)
+                        {
+                            case 1:
+                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), cx * currspeed / divx, -cy * currspeed / divy, 0, 0);
+                                break;
+                            case 2:
+                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), sx * currspeed / divx, -sy * currspeed / divy, 0, 0);
+                                break;
+                        }
 
                         break;
 
@@ -438,9 +454,10 @@ using System.Drawing;
             Console.WriteLine("Sending disconnect packet");
             sock.SendTo(obuf.ToArray(), sockaddr_in);
 
-
             sock.Shutdown(SocketShutdown.Both);
             sock.Close();
+
+            Console.WriteLine("Thread ended properly");
         }
 
         void ProcessKDown(Dummy.Keybinding key)
