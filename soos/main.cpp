@@ -27,8 +27,10 @@ static int  __excno;
 
 #include <exception>
 
+#ifndef OSUC
 #include <theora/theora.h>
 #include <theora/theoradec.h>
+#endif
 
 #define hangmacro()\
 ({\
@@ -84,6 +86,8 @@ int pollsock(int sock, int wat, int timeout = 0)
 
 void _ded()
 {
+    screenon();
+    
     gfxSetScreenFormat(GFX_TOP, GSP_RGB565_OES);
     gfxSetDoubleBuffering(GFX_TOP, false);
     gfxSwapBuffers();
@@ -122,6 +126,7 @@ void _ded()
     longjmp(__exc, 1);
 }
 
+#ifndef OSUC
 class bufsoc
 {
 public:
@@ -251,635 +256,755 @@ th_dec_ctx* vctx = 0;
 
 Handle yrhand = 0;
 
+#else
+extern "C"
+{
+extern Handle hidEvents[5];
+}
+
+extern "C" u32 buttonheld()
+{
+    return hidSharedMem[10 + ((hidSharedMem[4] & 7) << 2)];
+}
+#endif
+
 int main()
 {
-  // =====[PROGINIT]=====
-  
-  gfxInit(GSP_BGR8_OES, GSP_BGR8_OES, false);
-  
-  gfxSetDoubleBuffering(GFX_TOP, false);
-  gfxSetDoubleBuffering(GFX_BOTTOM, false);
-  
-  acInit();
-  y2rInit();
-  
-  inbuf = new struct packet;
-  outbuf = new struct packet;
-  
-  // =====[VARS]=====
-  
-  int ret = 0;
-  int cy = 0;
-  u32 kDown;
-  u32 kHeld;
-  u32 kUp;
-  u8* fbTopLeft;
-  u8* fbTopRight;
-  u8* fbBottom;
-  PrintConsole console;
-  u32 timer = 0;
-  u32 altkey = 0;
-  const u16 port = 6956;
-  int connectd = 0;
-  int altmode = 0;
-  
-  int socks = 0;
-  bufsoc* soc = nullptr;
-  struct sockaddr_in sais;
-  socklen_t sizeof_sais = sizeof(sais);
-  
-  // =====[PREINIT]=====
-  
-  osSetSpeedupEnable(1);
-  
-  if((__excno = setjmp(__exc))) goto killswitch;
-  
-#ifdef _3DS
-  std::set_unexpected(_ded);
-  std::set_terminate(_ded);
+    // =====[PROGINIT]=====
+    
+    gfxInit(GSP_BGR8_OES, GSP_BGR8_OES, false);
+    
+    gfxSetDoubleBuffering(GFX_TOP, false);
+    gfxSetDoubleBuffering(GFX_BOTTOM, false);
+    
+    acInit();
+    
+#ifndef OSUC
+    y2rInit();
 #endif
-  
-  consoleInit(GFX_TOP, &console);
-  consoleSelect(&console);
-  
-  fbTopLeft = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
-  fbTopRight = gfxGetFramebuffer(GFX_TOP, GFX_RIGHT, NULL, NULL);
-  fbBottom = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
-  
-  ret = socInit((u32*)memalign(0x1000, 0x100000), 0x100000);
-  if(ret < 0)
-  {
-      printf("socInit %08X\n", ret);
-      hangmacro();
-  }
-  
-  netreset:
-  
-  //consoleClear();
-  
-  puts("3DSControllerPlus v0.0_dev1\n");
-  
-  if(haznet && errno == EINVAL)
-  {
-      errno = 0;
-      puts("Waiting for wifi to reset");
-      while(wait4wifi()) gspWaitForVBlank();
-  }
-  
-  if(wait4wifi())
-  {
-      puts("preparesock...");
-      ret = preparesock(port);
-      if(ret)
-      {
-          printf("preparesock: (%i) %s\n", ret, strerror(ret));
-          hangmacro();
-      }
-      
-      puts("socket...");
-      cy = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-      if(cy <= 0)
-      {
-          printf("socket error: (%i) %s\n", errno, strerror(errno));
-          hangmacro();
-      }
-      
-      socks = cy;
-      
-      struct sockaddr_in saos;
-      saos.sin_family = AF_INET;
-      saos.sin_addr.s_addr = gethostid();
-      saos.sin_port = htons(port + 1);
-      
-      if(bind(socks, (struct sockaddr*)&saos, sizeof(saos)) < 0)
-      {
-          printf("bind error: (%i) %s\n", errno, strerror(errno));
-          hangmacro();
-      }
-      
-      //fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
-      
-      if(listen(socks, 1) < 0)
-      {
-          printf("listen error: (%i) %s\n", errno, strerror(errno));
-          hangmacro();
-      }
-  }
-  
-  
-  ret = irrstInit();
-  if(ret < 0)
-  {
-      printf("Failed to init irrst: %08X\n", ret);
-  }
-  
-  //consoleClear();
-  
-  reloop:
-  
-  //gfxSetScreenFormat(GFX_TOP, GSP_RGB565_OES);
-  
-  if(vidsetup) { th_setup_free(vidsetup); vidsetup = 0; }
-  if(vctx) { th_decode_free(vctx); vctx = 0; }
-  
-  if(yrhand) { svcCloseHandle(yrhand); yrhand = 0; }
-  
-  if(!nohdr)
-  {
-      ogg_sync_clear(&ogs);
-      ogg_stream_clear(&ogv);
-      
-      th_hdr = 0;
-      nohdr = 1;
-  }
-  
-  wait4wifi();
-  
-  if(haznet)
-  do
-  {
-      char buf[256];
-      gethostname(buf, sizeof(buf));
-      printf("Listening on %s:%i (%i for video)\n", buf, port, port + 1);
-  }
-  while(0);
-  else puts("\nWaiting for wifi...");
-  
-  // =====[RUN]=====
-  
-  while (aptMainLoop())
-  {
-    hidScanInput();
-    kDown = hidKeysDown();
-    kHeld = hidKeysHeld();
-    kUp = hidKeysUp();
     
-    touchPosition touch;
-    circlePosition cpad;
-    circlePosition cstick;
+    inbuf = new struct packet;
+    outbuf = new struct packet;
     
-    recva:
+    // =====[VARS]=====
     
-    ret = recvbuf(sizeof(struct packet));
-    if(ret <= 0)
+    int ret = 0;
+    int cy = 0;
+#ifdef OSUC
+    u8 seq = 0;
+    Handle hidhands[2] = {0};
+    
+    volatile struct touchdat
     {
-        if(!ret) puts("recvbuf == 0");
-        if(errno == EAGAIN)
+        s16 x;
+        s16 y;
+        u32 flag;
+    }* rawtouch, baktouch;
+    
+    do
+    {
+        rawtouch = (volatile struct touchdat*)(&hidSharedMem[0x30]);
+        hidhands[0] = hidEvents[0];
+        hidhands[1] = hidEvents[1];
+    }
+    while(0);
+#else
+    bufsoc* soc = nullptr;
+#endif
+    u32 kDown;
+    u32 kHeld;
+    u32 kUp;
+    u8* fbTopLeft;
+    u8* fbTopRight;
+    u8* fbBottom;
+    PrintConsole console;
+    u32 timer = 0;
+    u32 altkey = 0;
+    const u16 port = 6956;
+    int connectd = 0;
+    int altmode = 0;
+    
+    int socks = 0;
+    struct sockaddr_in sais;
+    socklen_t sizeof_sais = sizeof(sais);
+    
+    // =====[PREINIT]=====
+    
+    osSetSpeedupEnable(1);
+    
+    if((__excno = setjmp(__exc))) goto killswitch;
+    
+#ifdef _3DS
+    std::set_unexpected(_ded);
+    std::set_terminate(_ded);
+#endif
+    
+    consoleInit(GFX_TOP, &console);
+    consoleSelect(&console);
+    
+    fbTopLeft = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+    fbTopRight = gfxGetFramebuffer(GFX_TOP, GFX_RIGHT, NULL, NULL);
+    fbBottom = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+    
+    ret = socInit((u32*)memalign(0x1000, 0x100000), 0x100000);
+    if(ret < 0)
+    {
+        printf("socInit %08X\n", ret);
+        hangmacro();
+    }
+    
+    netreset:
+    
+    //consoleClear();
+    
+    puts("3DSControllerPlus v0.1\n");
+    
+    if(haznet && errno == EINVAL)
+    {
+        errno = 0;
+        puts("Waiting for wifi to reset");
+        while(wait4wifi()) gspWaitForVBlank();
+    }
+    
+    if(wait4wifi())
+    {
+        puts("preparesock...");
+        ret = preparesock(port);
+        if(ret)
         {
-            //no-op
-        }
-        else
-        {
-            timer = 0;
-            screenon();
-            printf("recvbuf: (%i) %s\n", errno, strerror(errno));
+            printf("preparesock: (%i) %s\n", ret, strerror(ret));
             hangmacro();
         }
-    }
-    else
-    {
-        switch(inbuf->hdr.cmd)
+        
+#ifndef OSUC
+        puts("socket...");
+        cy = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+        if(cy <= 0)
         {
-            case CONNECT:
-            {
-                if(inbuf->conn.altkey) altkey = inbuf->conn.altkey;
-                consoleClear();
-                screenon();
-                timer = 120;
-                connectd = 1;
-                handshake(CONNECT);
-                break;
-            }
-            case DISCONNECT:
-            {
-                memset(&touch, 0, sizeof(touch));
-                memset(&cpad, 0, sizeof(cpad));
-                memset(&cstick, 0, sizeof(cstick));
-                memset(&kHeld, 0, sizeof(kHeld));
-                sendinput(0, kHeld, touch, cpad, cstick);
-                
-                timer = 0;
-                screenon();
-                consoleClear();
-                puts("Disconnected");
-                connectd = 0;
-                goto reloop;
-            }
-            case SCREENSHOT:
-            {
-                if(!timer) screenon();
-                timer = 120;
-                memcpy(fbBottom + (inbuf->screen.offs * SCREENSHOT_CHUNK), inbuf->screen.data, SCREENSHOT_CHUNK);
-                goto recva;
-                //break;
-            }
-            default:
-                timer = 0;
-                screenon();
-                printf("Unknown packet: %i\n", inbuf->hdr.cmd);
-                hangmacro();
-                break;
+            printf("socket error: (%i) %s\n", errno, strerror(errno));
+            hangmacro();
         }
+        
+        socks = cy;
+        
+        struct sockaddr_in saos;
+        saos.sin_family = AF_INET;
+        saos.sin_addr.s_addr = gethostid();
+        saos.sin_port = htons(port + 1);
+        
+        if(bind(socks, (struct sockaddr*)&saos, sizeof(saos)) < 0)
+        {
+            printf("bind error: (%i) %s\n", errno, strerror(errno));
+            hangmacro();
+        }
+        
+        //fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+        
+        if(listen(socks, 1) < 0)
+        {
+            printf("listen error: (%i) %s\n", errno, strerror(errno));
+            hangmacro();
+        }
+#endif
     }
     
-    hidCircleRead(&cpad);
-    irrstCstickRead(&cstick);
-    hidTouchRead(&touch);
     
-    if(connectd)
+    ret = irrstInit();
+    if(ret < 0)
     {
-        if(timer && !--timer && !altmode && !soc) screenoff();
+        printf("Failed to init irrst: %08X\n", ret);
+    }
     
-        if(altkey && (kHeld & altkey) == altkey)
+    //consoleClear();
+    
+    reloop:
+    
+    //gfxSetScreenFormat(GFX_TOP, GSP_RGB565_OES);
+    
+#ifndef OSUC
+    if(vidsetup) { th_setup_free(vidsetup); vidsetup = 0; }
+    if(vctx) { th_decode_free(vctx); vctx = 0; }
+    
+    if(yrhand) { svcCloseHandle(yrhand); yrhand = 0; }
+    
+    if(!nohdr)
+    {
+        ogg_sync_clear(&ogs);
+        ogg_stream_clear(&ogv);
+        
+        th_hdr = 0;
+        nohdr = 1;
+    }
+#endif
+    
+    wait4wifi();
+    
+    if(haznet)
+    do
+    {
+        char buf[256];
+        gethostname(buf, sizeof(buf));
+        printf("Listening on %s:%i (%i for video)\n", buf, port, port + 1);
+    }
+    while(0);
+    else puts("\nWaiting for wifi...");
+    
+    // =====[RUN]=====
+    
+    while (aptMainLoop())
+    {
+#ifndef OSUC
+        hidScanInput();
+        kDown = hidKeysDown();
+        kHeld = hidKeysHeld();
+        kUp = hidKeysUp();
+        
+        touchPosition touch;
+        circlePosition cpad;
+        circlePosition cstick;
+#else
+        kHeld = buttonheld();
+#endif
+        
+        recva:
+        
+        ret = recvbuf(sizeof(struct packet));
+        if(ret <= 0)
         {
-            if(!altmode)
+            if(!ret) puts("recvbuf == 0");
+            if(errno == EAGAIN)
             {
-                screenon(); 
-                altmode = 1;
+                //no-op
             }
-            ret = sendinput(altmode, kHeld & ~altkey, touch, cpad, cstick);
+            else
+            {
+                timer = 0;
+                screenon();
+                printf("recvbuf: (%i) %s\n", errno, strerror(errno));
+                hangmacro();
+            }
         }
         else
         {
-            if(altmode)
+            switch(inbuf->hdr.cmd)
             {
-                if(!timer) timer = 30;
-                altmode = 0;
-            }
-            ret = sendinput(0, kHeld, touch, cpad, cstick);
-        }
-        
-        if(ret <= 0)
-        {
-            if(!ret) puts("sendinput == 0");
-            if(errno == EAFNOSUPPORT)
-            {
-                
-            }
-            else
-            {
-                timer = 0;
-                screenon();
-                printf("sendinput: (%i) %s\n", errno, strerror(errno));
-                hangmacro();
-            }
-        }
-    }
-    else if((kHeld & (KEY_START | KEY_SELECT)) == (KEY_START | KEY_SELECT)) break;
-    
-    nosoc:
-    if(ogg_stream_packetout(&ogv, &ogp) > 0)
-    {
-        ogg_int64_t dummy;
-        if(!th_decode_packetin(vctx, &ogp, &dummy))
-        {
-            th_ycbcr_buffer ybr;
-            
-            //puts("decoding image data");
-            
-            th_decode_ycbcr_out(vctx, ybr);
-            
-            /*int i;
-            for(i = 0; i != 3; i++)
-            {
-                printf("#%i: %ix%i (%i)\n", i, ybr[i].width, ybr[i].height, ybr[i].stride);
-            }*/
-            
-            Y2RU_StopConversion();
-            
-            Y2RU_SetSendingY(ybr[0].data, ybr[0].stride * ybr[0].height, ybr[0].width, ybr[0].stride - ybr[0].width);
-            Y2RU_SetSendingU(ybr[1].data, ybr[1].stride * ybr[1].height, ybr[1].width, ybr[1].stride - ybr[1].width);
-            Y2RU_SetSendingV(ybr[2].data, ybr[2].stride * ybr[2].height, ybr[2].width, ybr[2].stride - ybr[2].width);
-            
-            Y2RU_SetReceiving\
-            (\
-                gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, nullptr, nullptr),\
-                240 * 320 * 3,
-                240 * 3,\
-                0
-            );
-            
-            //puts("Y2R");
-            
-            Y2RU_StartConversion();
-            
-            //if(svcWaitSynchronization(yrhand, 6e7)) puts("Y2R timed out");
-        }
-    }
-    
-    if(!soc)
-    {
-        if(!haznet)
-        {
-            if(wait4wifi()) goto netreset;
-        }
-        else if(pollsock(socks, POLLIN) == POLLIN)
-        {
-            socklen_t sizeof_sai = sizeof(sais);
-            int cli = accept(socks, (struct sockaddr*)&sais, &sizeof_sais);
-            if(cli < 0)
-            {
-                printf("Failed to accept client: (%i) %s\n", errno, strerror(errno));
-                if(errno == EINVAL) goto netreset;
-            }
-            else
-            {
-                th_info_init(&vidinfo);
-                th_comment_init(&vidcomm);
-                
-                if(vidsetup) { th_setup_free(vidsetup); vidsetup = 0; }
-                if(vctx) { th_decode_free(vctx); vctx = 0; }
-                
-                soc = new bufsoc(cli, 0x21000);
-                
-                //gfxSetScreenFormat(GFX_TOP, GSP_BGR8_OES);
-            }
-        }
-        else if(pollsock(socks, POLLERR) == POLLERR)
-        {
-            printf("POLLERR (%i) %s\n", errno, strerror(errno));
-            goto netreset;
-        }
-    }
-    
-    if(ogv.body_fill > 0x18000)
-    {
-        starvecheck:
-        if(ogg_stream_packetpeek(&ogv, nullptr) > 0)
-        {
-            goto nosoc;
-        }
-        else starving = 1;
-    }
-    
-    if(soc)
-    {
-        if(soc->avail())
-        while(1)
-        {
-            hidScanInput();
-            if(hidKeysHeld() & KEY_SELECT)
-            {
-                delete soc;
-                soc = nullptr;
-                break;
-            }
-            
-            //puts("reading");
-            cy = soc->readbuf();
-            if(cy <= 0)
-            {
-                printf("Failed to recvbuf: (%i) %s\n", errno, strerror(errno));
-                delete soc;
-                soc = nullptr;
-                break;
-            }
-            else
-            {
-                bufsoc::packet* k = soc->pack();
-                
-                /*if(k->packetid != 4)*/ //printf("================================\n#%i 0x%X | %i\n", k->packetid, k->size, cy);
-                
-                char* ogbuf;
-                
-                reread:
-                switch(k->packetid)
+                case CONNECT:
                 {
-                    case 0: //CONNECT
-                    case 1: //ERROR
-                        puts("forced dc");
-                        delete soc;
-                        soc = nullptr;
-                        break;
+                    if(!inbuf->hdr.extdata)
+                    {
+                        handshake(DISCONNECT);
+                        timer = 0;
+                        screenon();
+                        consoleClear();
+                        puts("Disconnected");
+                        connectd = 0;
+                        goto reloop;
+                    }
+                    if(inbuf->conn.altkey) altkey = inbuf->conn.altkey;
+                    consoleClear();
+#ifndef OSUC
+                    screenon();
+                    timer = 120;
+#else
+                    screenoff();
+                    seq = 0;
+#endif
+                    connectd = 1;
+                    handshake(CONNECT);
+                    break;
+                }
+                case DISCONNECT:
+                {
+#ifdef OSUC
+                    SendKeysEx(seq++, 0);
+                    SendTouchEx(seq++, 0, 0, 0);
+#else
+                    memset(&touch, 0, sizeof(touch));
+                    memset(&cpad, 0, sizeof(cpad));
+                    memset(&cstick, 0, sizeof(cstick));
+                    memset(&kHeld, 0, sizeof(kHeld));
+                    sendinput(0, kHeld, touch, cpad, cstick);
+#endif
                     
-                    case 2: //DATA
-                        ogbuf = ogg_sync_buffer(&ogs, k->size);
-                        if(!ogbuf)
+                    timer = 0;
+                    screenon();
+                    consoleClear();
+                    puts("Disconnected");
+                    connectd = 0;
+                    handshake(DISCONNECT);
+                    goto reloop;
+                }
+                case SCREENSHOT:
+                {
+                    if(!timer) screenon();
+                    timer = 120;
+                    memcpy(fbBottom + (inbuf->screen.offs * SCREENSHOT_CHUNK), inbuf->screen.data, SCREENSHOT_CHUNK);
+                    goto recva;
+                }
+                case 0x7D: //TouchCalEx
+                {
+                    do
+                    {
+                        Handle h = 0;
+                        u32 cmdbase = 1 << 26;
+                        Result res = srvGetServiceHandle(&h, "cfg:s");
+                        if(res < 0)
                         {
-                            puts("No ogg_sync_buffer!");
+                            cmdbase <<= 1;
+                            res = srvGetServiceHandle(&h, "cfg:i");
+                        }
+                        if(res < 0)
+                        {
+                            SendCalErr(res);
                             break;
                         }
-                        memcpy(ogbuf, k->data, k->size);
-                        ret = ogg_sync_wrote(&ogs, k->size);
-                        if(ret < 0) printf("ogg_sync_wrote %i\n", ret);
                         
-                        if(nohdr || th_hdr <3)
+                        s16 cal[8];
+                        u32* ipc = getThreadCommandBuffer();
+                        ipc[0] = cmdbase | 0x10082;
+                        ipc[1] = 0x10;
+                        ipc[2] = 0x40000;
+                        ipc[3] = 0x10C;
+                        ipc[4] = (u32)cal;
+                        res = svcSendSyncRequest(h);
+                        svcCloseHandle(h);
+                        if(res >= 0) res = ipc[1];
+                        if(res < 0)
                         {
-                            if(nohdr) puts("No headers yet"); else puts("relooping init");
-                            
-                            if(!th_hdr || nohdr)
+                            SendCalErr(res);
+                            break;
+                        }
+                        SendCalEx(cal);
+                    }
+                    while(0);
+                    screenoff();
+                    break;
+                }
+                    
+                default:
+                    timer = 0;
+                    screenon();
+                    printf("Unknown packet: %i\n", inbuf->hdr.cmd);
+                    hangmacro();
+                    break;
+            }
+        }
+        
+#ifndef OSUC
+        hidCircleRead(&cpad);
+        irrstCstickRead(&cstick);
+        hidTouchRead(&touch);
+#endif
+        
+        if(connectd)
+        {
+#ifndef OSUC
+            if(timer && !--timer && !altmode && !soc) screenoff();
+            
+            if(altkey && (kHeld & altkey) == altkey)
+            {
+                if(!altmode)
+                {
+                    screenon(); 
+                    altmode = 1;
+                }
+                ret = sendinput(altmode, kHeld & ~altkey, touch, cpad, cstick);
+            }
+            else
+            {
+                if(altmode)
+                {
+                    if(!timer) timer = 30;
+                    altmode = 0;
+                }
+                ret = sendinput(0, kHeld, touch, cpad, cstick);
+            }
+#else
+            s32 evtno = -1;
+            if(svcWaitSynchronizationN(&evtno, hidhands, 2, 0, 1e9) >= 0 && !(evtno & 0xFFFFFFFE))
+            {
+                ret = SendTouchEx(seq++, rawtouch->x, rawtouch->y, rawtouch->flag & 1);
+                if(ret >= 0) ret = SendKeysEx(seq++, buttonheld());
+            }
+            else ret = 0;
+#endif
+            
+            if(ret <= 0)
+            {
+                //if(!ret) puts("sendinput == 0");
+                if(errno == EAFNOSUPPORT)
+                {
+                    
+                }
+                else
+                {
+                    timer = 0;
+                    screenon();
+                    printf("sendinput: (%i) %s\n", errno, strerror(errno));
+                    hangmacro();
+                }
+            }
+        }
+        else if((kHeld & (KEY_START | KEY_SELECT)) == (KEY_START | KEY_SELECT)) break;
+        
+#ifndef OSUC
+        nosoc:
+        if(ogg_stream_packetout(&ogv, &ogp) > 0)
+        {
+            ogg_int64_t dummy;
+            if(!th_decode_packetin(vctx, &ogp, &dummy))
+            {
+                th_ycbcr_buffer ybr;
+                
+                //puts("decoding image data");
+                
+                th_decode_ycbcr_out(vctx, ybr);
+                
+                /*int i;
+                for(i = 0; i != 3; i++)
+                {
+                    printf("#%i: %ix%i (%i)\n", i, ybr[i].width, ybr[i].height, ybr[i].stride);
+                }*/
+                
+                Y2RU_StopConversion();
+                
+                Y2RU_SetSendingY(ybr[0].data, ybr[0].stride * ybr[0].height, ybr[0].width, ybr[0].stride - ybr[0].width);
+                Y2RU_SetSendingU(ybr[1].data, ybr[1].stride * ybr[1].height, ybr[1].width, ybr[1].stride - ybr[1].width);
+                Y2RU_SetSendingV(ybr[2].data, ybr[2].stride * ybr[2].height, ybr[2].width, ybr[2].stride - ybr[2].width);
+                
+                Y2RU_SetReceiving\
+                (\
+                    gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, nullptr, nullptr),\
+                    240 * 320 * 3,
+                    240 * 3,\
+                    0
+                );
+                
+                //puts("Y2R");
+                
+                Y2RU_StartConversion();
+                
+                //if(svcWaitSynchronization(yrhand, 6e7)) puts("Y2R timed out");
+            }
+        }
+        
+        if(!soc)
+        {
+            if(!haznet)
+            {
+                if(wait4wifi()) goto netreset;
+            }
+            else if(pollsock(socks, POLLIN) == POLLIN)
+            {
+                socklen_t sizeof_sai = sizeof(sais);
+                int cli = accept(socks, (struct sockaddr*)&sais, &sizeof_sais);
+                if(cli < 0)
+                {
+                    printf("Failed to accept client: (%i) %s\n", errno, strerror(errno));
+                    if(errno == EINVAL) goto netreset;
+                }
+                else
+                {
+                    th_info_init(&vidinfo);
+                    th_comment_init(&vidcomm);
+                    
+                    if(vidsetup) { th_setup_free(vidsetup); vidsetup = 0; }
+                    if(vctx) { th_decode_free(vctx); vctx = 0; }
+                    
+                    soc = new bufsoc(cli, 0x21000);
+                    
+                    //gfxSetScreenFormat(GFX_TOP, GSP_BGR8_OES);
+                }
+            }
+            else if(pollsock(socks, POLLERR) == POLLERR)
+            {
+                printf("POLLERR (%i) %s\n", errno, strerror(errno));
+                goto netreset;
+            }
+        }
+        
+        /*if(ogv.body_fill > 0x18000)
+        {
+            starvecheck:
+            if(ogg_stream_packetpeek(&ogv, nullptr) > 0)
+            {
+                goto nosoc;
+            }
+            else starving = 1;
+        }*/
+        
+        if(soc)
+        {
+            if(soc->avail())
+            while(1)
+            {
+                hidScanInput();
+                if(hidKeysHeld() & KEY_SELECT)
+                {
+                    delete soc;
+                    soc = nullptr;
+                    break;
+                }
+                
+                //puts("reading");
+                cy = soc->readbuf();
+                if(cy <= 0)
+                {
+                    printf("Failed to recvbuf: (%i) %s\n", errno, strerror(errno));
+                    delete soc;
+                    soc = nullptr;
+                    break;
+                }
+                else
+                {
+                    bufsoc::packet* k = soc->pack();
+                    
+                    /*if(k->packetid != 4)*/ //printf("================================\n#%i 0x%X | %i\n", k->packetid, k->size, cy);
+                    
+                    char* ogbuf;
+                    
+                    reread:
+                    switch(k->packetid)
+                    {
+                        case 0: //CONNECT
+                        case 1: //ERROR
+                            puts("forced dc");
+                            delete soc;
+                            soc = nullptr;
+                            break;
+                        
+                        case 2: //DATA
+                            ogbuf = ogg_sync_buffer(&ogs, k->size);
+                            if(!ogbuf)
                             {
-                                puts("No Theora header yet");
-                                while(1)
+                                puts("No ogg_sync_buffer!");
+                                break;
+                            }
+                            memcpy(ogbuf, k->data, k->size);
+                            ret = ogg_sync_wrote(&ogs, k->size);
+                            if(ret < 0) printf("ogg_sync_wrote %i\n", ret);
+                            
+                            if(nohdr || th_hdr <3)
+                            {
+                                if(nohdr) puts("No headers yet"); else puts("relooping init");
+                                
+                                if(!th_hdr || nohdr)
                                 {
-                                    ret = ogg_sync_pageout(&ogs, &ogb);
-                                    if(ret <= 0)
+                                    puts("No Theora header yet");
+                                    while(1)
                                     {
-                                        printf("ogg_sync_pageout ded %i\n", ret);
-                                        break;
-                                    }
-                                    
-                                    puts("ogg_sync_pageout");
-                                    ogg_stream_state ogst;
-                                    
-                                    if(!ogg_page_bos(&ogb))
-                                    {
-                                        puts(th_hdr ? "requeueing data" : "no-header data");
-                                        if(th_hdr) ogg_stream_pagein(&ogv, &ogb);
-                                        nohdr = 0;
-                                        break;
-                                    }
-                                    
-                                    ogg_stream_init(&ogst, ogg_page_serialno(&ogb));
-                                    ogg_stream_pagein(&ogst, &ogb);
-                                    ogg_stream_packetout(&ogst, &ogp);
-                                    
-                                    if(!th_hdr)
-                                    {
-                                        puts("testing Theora header");
-                                        ret = th_decode_headerin(&vidinfo, &vidcomm, &vidsetup, &ogp);
-                                        if(ret < 0)
+                                        ret = ogg_sync_pageout(&ogs, &ogb);
+                                        if(ret <= 0)
                                         {
-                                            printf("got non-Theora header, skipping (%i)\n", ret);
-                                            ogg_stream_clear(&ogst);
+                                            printf("ogg_sync_pageout ded %i\n", ret);
+                                            break;
+                                        }
+                                        
+                                        puts("ogg_sync_pageout");
+                                        ogg_stream_state ogst;
+                                        
+                                        if(!ogg_page_bos(&ogb))
+                                        {
+                                            puts(th_hdr ? "requeueing data" : "no-header data");
+                                            if(th_hdr) ogg_stream_pagein(&ogv, &ogb);
+                                            nohdr = 0;
+                                            break;
+                                        }
+                                        
+                                        ogg_stream_init(&ogst, ogg_page_serialno(&ogb));
+                                        ogg_stream_pagein(&ogst, &ogb);
+                                        ogg_stream_packetout(&ogst, &ogp);
+                                        
+                                        if(!th_hdr)
+                                        {
+                                            puts("testing Theora header");
+                                            ret = th_decode_headerin(&vidinfo, &vidcomm, &vidsetup, &ogp);
+                                            if(ret < 0)
+                                            {
+                                                printf("got non-Theora header, skipping (%i)\n", ret);
+                                                ogg_stream_clear(&ogst);
+                                            }
+                                            else
+                                            {
+                                                puts("got Theora header");
+                                                memcpy(&ogv, &ogst, sizeof(ogv));
+                                                th_hdr = 1;
+                                                
+                                                printf\
+                                                (\
+                                                    "Video info:\n- F: %ix%i\n- P: %ix%i\n- X: %ix%i\n\n",\
+                                                    vidinfo.frame_width, vidinfo.frame_height, vidinfo.pic_width, vidinfo.pic_height, vidinfo.pic_x, vidinfo.pic_y\
+                                                );
+                                            }
                                         }
                                         else
                                         {
-                                            puts("got Theora header");
-                                            memcpy(&ogv, &ogst, sizeof(ogv));
-                                            th_hdr = 1;
-                                            
-                                            printf\
-                                            (\
-                                                "Video info:\n- F: %ix%i\n- P: %ix%i\n- X: %ix%i\n\n",\
-                                                vidinfo.frame_width, vidinfo.frame_height, vidinfo.pic_width, vidinfo.pic_height, vidinfo.pic_x, vidinfo.pic_y\
-                                            );
+                                            ogg_stream_clear(&ogst);
                                         }
                                     }
-                                    else
+                                    
+                                    if(ret <= 0)
                                     {
-                                        ogg_stream_clear(&ogst);
+                                        puts("breaking after ded");
+                                        break;
                                     }
                                 }
                                 
-                                if(ret <= 0)
+                                if(!nohdr && !th_hdr)
                                 {
-                                    puts("breaking after ded");
-                                    break;
-                                }
-                            }
-                            
-                            if(!nohdr && !th_hdr)
-                            {
-                                puts("End of headers without Theora header... wat");
-                                delete soc;
-                                soc = nullptr;
-                                break;
-                            }
-                            
-                            while(th_hdr <3)
-                            {
-                                puts("ogg_stream_packetout");
-                                ret = ogg_stream_packetout(&ogv, &ogp);
-                                if(ret < 0)
-                                {
-                                    printf("Invalid ogg packet! (line #%i): %i\n", __LINE__, ret);
+                                    puts("End of headers without Theora header... wat");
                                     delete soc;
                                     soc = nullptr;
                                     break;
                                 }
-                                else if(!ret)
+                                
+                                while(th_hdr <3)
                                 {
-                                    puts("trying to fill pages");
-                                    if(ogg_sync_pageout(&ogs, &ogb) > 0)
+                                    puts("ogg_stream_packetout");
+                                    ret = ogg_stream_packetout(&ogv, &ogp);
+                                    if(ret < 0)
                                     {
-                                        puts("filling page");
-                                        ogg_stream_pagein(&ogv, &ogb);
-                                    }
-                                    else
-                                    {
-                                        puts("Out of buffer pages while parsing headery, waiting...");
+                                        printf("Invalid ogg packet! (line #%i): %i\n", __LINE__, ret);
+                                        delete soc;
+                                        soc = nullptr;
                                         break;
+                                    }
+                                    else if(!ret)
+                                    {
+                                        puts("trying to fill pages");
+                                        if(ogg_sync_pageout(&ogs, &ogb) > 0)
+                                        {
+                                            puts("filling page");
+                                            ogg_stream_pagein(&ogv, &ogb);
+                                        }
+                                        else
+                                        {
+                                            puts("Out of buffer pages while parsing headery, waiting...");
+                                            break;
+                                        }
+                                        
+                                        puts("trying again with new pages");
+                                        continue;
                                     }
                                     
-                                    puts("trying again with new pages");
-                                    continue;
+                                    ret = th_decode_headerin(&vidinfo, &vidcomm, &vidsetup, &ogp);
+                                    
+                                    if(ret < 0)
+                                    {
+                                        printf("Invalid Theora packet! (line #%i): %i\n", __LINE__, ret);
+                                        //delete soc;
+                                        //soc = nullptr;
+                                        //break;
+                                    }
+                                    else th_hdr++;
                                 }
                                 
-                                ret = th_decode_headerin(&vidinfo, &vidcomm, &vidsetup, &ogp);
-                                
-                                if(ret < 0)
+                                if(th_hdr >= 3)
                                 {
-                                    printf("Invalid Theora packet! (line #%i): %i\n", __LINE__, ret);
-                                    //delete soc;
-                                    //soc = nullptr;
-                                    //break;
+                                    puts("allocating decoder");
+                                    if(vctx) th_decode_free(vctx);
+                                    vctx = th_decode_alloc(&vidinfo, vidsetup);
+                                    if(!vctx)
+                                    {
+                                        puts("Decoder: Out of Memory");
+                                        hangmacro();
+                                    }
+                                    
+                                    puts("setting up Y2R");
+                                    
+                                    Y2RU_StopConversion();
+                                    
+                                    yparam.alpha = 0xFF;
+                                    yparam.unused = 0;
+                                    yparam.rotation = ROTATION_NONE;//CLOCKWISE_90;
+                                    yparam.block_alignment = BLOCK_LINE;
+                                    yparam.input_line_width = 240;
+                                    yparam.input_lines = 320;
+                                    yparam.standard_coefficient = COEFFICIENT_ITU_R_BT_601;
+                                    yparam.input_line_width = (yparam.input_line_width + 7) & ~7;
+                                    switch(vidinfo.pixel_fmt)
+                                    {
+                                        case TH_PF_420:
+                                            yparam.input_format = INPUT_YUV420_INDIV_8;
+                                            y2y = yparam.input_line_width * yparam.input_lines * 1;
+                                            y2u = yparam.input_line_width * yparam.input_lines / 4 * 1;
+                                            break;
+                                        case TH_PF_422:
+                                            yparam.input_format = INPUT_YUV422_INDIV_8;
+                                            y2y = yparam.input_line_width * yparam.input_lines * 1;
+                                            y2u = yparam.input_line_width * yparam.input_lines / 2 * 1;
+                                            break;
+                                        case TH_PF_444:
+                                            puts("YUV444 is not supported by Y2R");
+                                            break;
+                                    }
+                                    yparam.output_format = (Y2RU_OutputFormat)OUTPUT_RGB_24;
+                                    
+                                    Y2RU_SetConversionParams(&yparam);
+                                    Y2RU_SetTransferEndInterrupt(1);
+                                    Y2RU_GetTransferEndEvent(&yrhand);
                                 }
-                                else th_hdr++;
+                            }
+                            else
+                            {
+                                while(ogg_sync_pageout(&ogs, &ogb) > 0)
+                                    ogg_stream_pagein(&ogv, &ogb);
                             }
                             
-                            if(th_hdr >= 3)
+                            /*if(starving)
                             {
-                                puts("allocating decoder");
-                                if(vctx) th_decode_free(vctx);
-                                vctx = th_decode_alloc(&vidinfo, vidsetup);
-                                if(!vctx)
-                                {
-                                    puts("Decoder: Out of Memory");
-                                    hangmacro();
-                                }
-                                
-                                puts("setting up Y2R");
-                                
-                                Y2RU_StopConversion();
-                                
-                                yparam.alpha = 0xFF;
-                                yparam.unused = 0;
-                                yparam.rotation = ROTATION_NONE;//CLOCKWISE_90;
-                                yparam.block_alignment = BLOCK_LINE;
-                                yparam.input_line_width = 240;
-                                yparam.input_lines = 320;
-                                yparam.standard_coefficient = COEFFICIENT_ITU_R_BT_601;
-                                yparam.input_line_width = (yparam.input_line_width + 7) & ~7;
-                                switch(vidinfo.pixel_fmt)
-                                {
-                                    case TH_PF_420:
-                                        yparam.input_format = INPUT_YUV420_INDIV_8;
-                                        y2y = yparam.input_line_width * yparam.input_lines * 1;
-                                        y2u = yparam.input_line_width * yparam.input_lines / 4 * 1;
-                                        break;
-                                    case TH_PF_422:
-                                        yparam.input_format = INPUT_YUV422_INDIV_8;
-                                        y2y = yparam.input_line_width * yparam.input_lines * 1;
-                                        y2u = yparam.input_line_width * yparam.input_lines / 2 * 1;
-                                        break;
-                                    case TH_PF_444:
-                                        puts("YUV444 is not supported by Y2R");
-                                        break;
-                                }
-                                yparam.output_format = (Y2RU_OutputFormat)OUTPUT_RGB_24;
-                                
-                                Y2RU_SetConversionParams(&yparam);
-                                Y2RU_SetTransferEndInterrupt(1);
-                                Y2RU_GetTransferEndEvent(&yrhand);
-                            }
-                        }
-                        else
-                        {
-                            while(ogg_sync_pageout(&ogs, &ogb) > 0)
-                                ogg_stream_pagein(&ogv, &ogb);
-                        }
+                                starving = 0;
+                                goto starvecheck;
+                            }*/
+                            
+                            break;
                         
-                        if(starving)
-                        {
-                            starving = 0;
-                            goto starvecheck;
-                        }
-                        
-                        break;
+                        default:
+                            printf("Invalid packet ID: %i\n", k->packetid);
+                            delete soc;
+                            soc = nullptr;
+                            break;
+                    }
                     
-                    default:
-                        printf("Invalid packet ID: %i\n", k->packetid);
-                        delete soc;
-                        soc = nullptr;
-                        break;
+                    break;
                 }
-                
-                break;
             }
+            
+            if(!soc) goto reloop;
         }
         
-        if(!soc) goto reloop;
+        gfxFlushBuffers();
+        gfxSwapBuffers();
+        if(!th_hdr) gspWaitForVBlank();
+#endif
+        
     }
     
-    gfxFlushBuffers();
-    gfxSwapBuffers();
-    gspWaitForVBlank();
-  }
-
-  // =====[END]=====
-  
-  killswitch:
-  
-  if(vidsetup) th_setup_free(vidsetup);
-  if(vctx) th_decode_free(vctx);
-  
-  if(yrhand) svcCloseHandle(yrhand);
-  
-  irrstExit();
-  
-  handshake(DISCONNECT);
-  
-  screenon();
-  
-  close(sock);
-  close(socks);
-  SOCU_ShutdownSockets();
-  
-  socExit();
-  y2rExit();
-  acExit();
-  gfxExit();
-
-  return 0;
+    // =====[END]=====
+    
+    killswitch:
+    
+#ifndef OSUC
+    if(vidsetup) th_setup_free(vidsetup);
+    if(vctx) th_decode_free(vctx);
+    
+    if(yrhand) svcCloseHandle(yrhand);
+    closesocket(socks);
+#endif
+    
+    irrstExit();
+    
+    handshake(DISCONNECT);
+    
+    screenon();
+    
+    closesocket(sock);
+    SOCU_ShutdownSockets();
+    
+    socExit();
+    y2rExit();
+    acExit();
+    gfxExit();
+    
+    return 0;
 }

@@ -33,7 +33,9 @@
             this.btnHwndNull = new System.Windows.Forms.Button();
             this.numProcOffs = new System.Windows.Forms.NumericUpDown();
             this.textProcess = new System.Windows.Forms.TextBox();
+            this.numMovSpd = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.numProcOffs)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numMovSpd)).BeginInit();
             this.SuspendLayout();
             // 
             // checkABS
@@ -80,13 +82,37 @@
             this.textProcess.Name = "textProcess";
             this.textProcess.Size = new System.Drawing.Size(260, 20);
             this.textProcess.TabIndex = 4;
-            this.textProcess.Text = "osu!";
+            this.textProcess.Text = "shacksu!";
+            // 
+            // numMovSpd
+            // 
+            this.numMovSpd.Location = new System.Drawing.Point(12, 87);
+            this.numMovSpd.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.numMovSpd.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numMovSpd.Name = "numMovSpd";
+            this.numMovSpd.Size = new System.Drawing.Size(260, 20);
+            this.numMovSpd.TabIndex = 5;
+            this.numMovSpd.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numMovSpd.ValueChanged += new System.EventHandler(this.numMovSpd_ValueChanged);
             // 
             // FormMisc
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 262);
+            this.Controls.Add(this.numMovSpd);
             this.Controls.Add(this.textProcess);
             this.Controls.Add(this.numProcOffs);
             this.Controls.Add(this.btnHwndNull);
@@ -94,7 +120,9 @@
             this.Controls.Add(this.checkABS);
             this.Name = "FormMisc";
             this.Text = "FormMisc";
+            this.Load += new System.EventHandler(this.FormMisc_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numProcOffs)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numMovSpd)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -107,5 +135,6 @@
         private System.Windows.Forms.Button btnHwndNull;
         private System.Windows.Forms.NumericUpDown numProcOffs;
         private System.Windows.Forms.TextBox textProcess;
+        private System.Windows.Forms.NumericUpDown numMovSpd;
     }
 }

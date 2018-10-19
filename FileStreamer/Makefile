@@ -33,7 +33,7 @@ CFLAGS	:=	-g -Wall -O0 \
                     -Wno-format -Wno-write-strings -Wno-unused-variable -Wno-unused-value 
 
 ifeq ($(OS),Windows_NT)
-CFLAGS	+= 
+CFLAGS	+= -m32
 POSTFIX := exe
 else
 POSTFIX := elf
@@ -42,7 +42,7 @@ endif
 CFLAGS	+=	$(INCLUDE) -D_PC -DBUILDTIME=\"$(DT)\"
 CXXFLAGS	:= $(CFLAGS) -Wno-reorder -fno-rtti -std=gnu++11
 
-LDFLAGS	=   -g
+LDFLAGS	=   -g -m32
 
 LIBS	:= -ltheora -logg -lm
 
@@ -137,15 +137,15 @@ $(OUTPUT).$(POSTFIX): $(OFILES)
 
 %.o: %.cpp
 	@echo [CX] $(notdir $<)
-	@$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 %.o: %.c
 	@echo [CC] $(notdir $<)
-	@$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 %.$(POSTFIX):
 	@echo [LD] $(notdir $@)
-	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data

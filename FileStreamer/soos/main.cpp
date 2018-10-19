@@ -87,6 +87,7 @@ using namespace std;
 
 #ifdef WIN32
 HWND wnd = nullptr;
+HWND hrc = nullptr;
 
 struct handle_data
 {
@@ -309,6 +310,8 @@ bufsoc* soc = 0;
 bufsoc::packet* p = 0;
 int ret = 0;
 
+extern "C" int _kbhit();
+
 ogg_page ogb;
 ogg_stream_state ogv;
 ogg_packet ogp;
@@ -402,7 +405,7 @@ void rgb4_yuv(u8* y, u8* u, u8* v, u8* src)
                 uint8_t g = src[o + 1];
                 uint8_t b = src[o + 0];
 
-                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+                *(y++) = ((66*r + 129*g + 25*b) >> 8);
 
                 *(u++) = ((-38*r + -74*g + 112*b) >> 8) + 128;
                 *(v++) = ((112*r + -94*g + -18*b) >> 8) + 128;
@@ -415,7 +418,7 @@ void rgb4_yuv(u8* y, u8* u, u8* v, u8* src)
                 g = src[o + 1];
                 b = src[o + 2];
 
-                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+                *(y++) = ((66*r + 129*g + 25*b) >> 8);
                 
                 if(!x) break;
             }
@@ -437,7 +440,7 @@ void rgb4_yuv(u8* y, u8* u, u8* v, u8* src)
                 
                 o -= 320 * 4;
 
-                *(y++) = ((66*r + 129*g + 25*b) >> 8) + 16;
+                *(y++) = ((66*r + 129*g + 25*b) >> 8);
             }
             while(x--);
             
@@ -499,16 +502,18 @@ int main(int argc, char** argv)
             
             char* p = argv[3];
             char c = *p;
-            if(c >= '0' && c <= '9')
+            if(c >= '0' && c <= '9') //window index
             {
                 nth = c - '0';
                 c = *(++p);
             }
-            else if(c == '*') { flag |= 1; c = *(++p); }
+            else if(c == '*') { flag |= 1; c = *(++p); } //main window
             
-            if     (c == ':') wnd = getwin(nullptr, nth, flag, p + 1);
-            else if(c == '!') wnd = getwin(p + 1, nth, flag, nullptr);
-            else              wnd = getwin(p + 1, nth, flag, p + 1);
+            if(c == '+') { flag |= 2; c = *(++p); }      //fullscreen crop
+            
+            if     (c == ':') wnd = getwin(nullptr, nth, flag, p + 1); //by title
+            else if(c == '!') wnd = getwin(p + 1, nth, flag, nullptr); //by exe
+            else              wnd = getwin(p + 1, nth, flag, p + 1);   //both
             
             printf("Result HWND: %08X\n", wnd);
             puts("press ENTER to continue");
@@ -517,7 +522,13 @@ int main(int argc, char** argv)
             if(!wnd)
             {
                 printf("No matching window for pattern '%s'\n", argv[3]);
-                return 1;
+                //return 1;
+            }
+            
+            if(flag & 2)
+            {
+                hrc = wnd;
+                wnd = 0;
             }
         }
 #endif
@@ -530,6 +541,17 @@ int main(int argc, char** argv)
     }
     
 #ifdef WIN32
+    
+    static int(WINAPI*NtQuerySystemTime)(u64* timeptr) = (int(WINAPI*)(u64*))GetProcAddress(GetModuleHandle("ntdll"), "NtQuerySystemTime");
+    
+    u64 systime = 0;
+    u64 timediff = 0;
+    NtQuerySystemTime(&systime);
+    int framecnt = 0;
+    int pktcnt = 0;
+    int bytes = 0;
+    
+    FILE* fo = fopen("FileStream_debug.ogg", "wb");
     
     WSADATA socHandle;
     
@@ -571,7 +593,7 @@ int main(int argc, char** argv)
     {
         puts("Initing video encoder");
         
-        long dummy = 8 * 1024 * 400;
+        long dummy = 8 * 1024 * 180;
         
         ogg_stream_init(&ogv, 0x6956F00F);
         
@@ -584,37 +606,37 @@ int main(int argc, char** argv)
         vidinfo.pic_x = 0;
         vidinfo.pic_y = 0;
         vidinfo.target_bitrate = dummy;
-        vidinfo.fps_numerator = 1;
-        vidinfo.fps_denominator = 60;
+        vidinfo.quality = 0;
+        vidinfo.fps_numerator = 60;
+        vidinfo.fps_denominator = 1;
         vidinfo.aspect_numerator = 1;
         vidinfo.aspect_denominator = 1;
         
         puts("decoder_alloc");
         enc = th_encode_alloc(&vidinfo);
         if(!enc) errfail(th_encode_alloc);
+        th_info_clear(&vidinfo);
         
 #define thfail(wat) if((thr = th_encode_ctl(enc, wat, &dummy, sizeof(dummy)))) printf("th_encode_ctl(%s) fail: %i\n", #wat, thr);
         
         int thr = 0;
         
         thfail(TH_ENCCTL_SET_BITRATE);
-        dummy >>= 8;
-        thfail(TH_ENCCTL_SET_RATE_BUFFER);
-        dummy = 2;
-        thfail(TH_ENCCTL_SET_SPLEVEL);
-        dummy = TH_RATECTL_DROP_FRAMES | TH_RATECTL_CAP_OVERFLOW | TH_RATECTL_CAP_UNDERFLOW;
+        //dummy >>= 8;
+        //thfail(TH_ENCCTL_SET_RATE_BUFFER);
+        //dummy = 2;
+        //thfail(TH_ENCCTL_SET_SPLEVEL);
+        dummy = TH_RATECTL_DROP_FRAMES;
         thfail(TH_ENCCTL_SET_RATE_FLAGS);
         
 #undef thfail
         
         th_comment_init(&vidcomm);
-        vidcomm.vendor = "FileStreamer/PaintController by MarcusD v0.0_dev1";
+        vidcomm.vendor = "FileStreamer/PaintController by Sono v0.0_dev2";
         
-        puts("header stuff");
         while(th_encode_flushheader(enc, &vidcomm, &ogp) > 0)
             ogg_stream_packetin(&ogv, &ogp);
         
-        puts("ech");
         while(ogg_stream_pageout(&ogv, &ogb) > 0 || ogg_stream_flush(&ogv, &ogb) > 0)
         {
             printf("Writing header packet: 0%08X 0x%08X\n", ogb.header_len, ogb.body_len);
@@ -623,12 +645,13 @@ int main(int argc, char** argv)
             p->size = ogb.header_len + ogb.body_len;
             p->packetid = 2;
             if(soc->wribuf() < p->size) wsafail(soc->wribuf);
+            fwrite(ogb.header, 1, ogb.header_len, fo);
+            fwrite(ogb.body, 1, ogb.body_len, fo);
         }
         
-        puts("press ENTER to continue");
-        getchar();
+        //puts("press ENTER to continue");
+        //getchar();
     }
-    
     
     while(true)
     {
@@ -678,7 +701,13 @@ int main(int argc, char** argv)
         else
         {
             RECT rekt;
-            if(wnd) GetClientRect(wnd, &rekt);
+            if(hrc)
+            {
+                GetClientRect(hrc, &rekt);
+                ClientToScreen(hrc, (POINT*)&rekt.left);
+                ClientToScreen(hrc, (POINT*)&rekt.right);
+            }
+            else if(wnd) GetClientRect(wnd, &rekt);
             else
             {
                 rekt.left = 0;
@@ -687,20 +716,22 @@ int main(int argc, char** argv)
                 rekt.bottom = GetSystemMetrics(SM_CYSCREEN);
             }
             
-            if(!StretchBlt(memdc, 0, 0, 320, 240, srcdc, rekt.left, rekt.top, rekt.right - rekt.left, rekt.bottom - rekt.top, SRCCOPY))
+            //if
+            //(!
+                StretchBlt(memdc, 0, 0, 320, 240, srcdc, rekt.left, rekt.top, rekt.right - rekt.left, rekt.bottom - rekt.top, SRCCOPY)
+            /*)
             {
                 winfail(StretchBlt);
-            }
+            }*/;
             
             int imgs = GetBitmapBits(img, 240 * 320 * 4, imgbuf);
             imgs /= 240 * 320;
-            //printf("bpp: %i\n", imgs);
             
-            if(imgs == 3)
+            /*if(imgs == 3)
             {
                 rgb3_yuv(yuuy, uuuy, vuuy, imgbuf);
             }
-            else if(imgs == 4)
+            else */if(imgs == 4)
             {
                 rgb4_yuv(yuuy, uuuy, vuuy, imgbuf);
             }
@@ -724,19 +755,52 @@ int main(int argc, char** argv)
             vidbuf[2].data = vuuy;
             
             if(th_encode_ycbcr_in(enc, vidbuf)) errfail(th_encode_ycbcr_in);
+            framecnt++;
             
             while(th_encode_packetout(enc, 0, &ogp) > 0)
                 ogg_stream_packetin(&ogv, &ogp);
             
-            if(ogv.body_fill >= 0x400)
-            if(ogg_stream_flush(&ogv, &ogb) > 0)
+            //if(ogv.body_fill >= 0x400)
+            if(ogg_stream_flush(&ogv, &ogb) > 0 && ogb.body_len)
             {
-                printf("Writing data page: 0%08X\n", ogb.body_len);
+                //printf("Writing data page: 0%08X\n", ogb.body_len);
                 memcpy(&p->data[0], ogb.header, ogb.header_len);
                 memcpy(&p->data[ogb.header_len], ogb.body, ogb.body_len);
                 p->size = ogb.header_len + ogb.body_len;
                 p->packetid = 2;
+                bytes += p->size;
+                fwrite(ogb.header, 1, ogb.header_len, fo);
+                fwrite(ogb.body, 1, ogb.body_len, fo);
                 if(soc->wribuf() < p->size) wsafail(soc->wribuf);
+                pktcnt++;
+            }
+            
+            if(_kbhit())
+            {
+                if(fo)
+                {
+                    while(th_encode_packetout(enc, 1, &ogp) > 0)
+                        ogg_stream_packetin(&ogv, &ogp);
+                    
+                    if(ogg_stream_flush(&ogv, &ogb) > 0)
+                    {
+                        fwrite(ogb.header, 1, ogb.header_len, fo);
+                        fwrite(ogb.body, 1, ogb.body_len, fo);
+                        fflush(fo);
+                    }
+                }
+                break;
+            }
+            
+            NtQuerySystemTime(&timediff);
+            timediff -= systime;
+            if(timediff >= 1e7)
+            {
+                systime += 1e7;
+                printf("fps=%3i, %8.2fKB/s, pktcnt=%3i\n", framecnt, bytes / 1024.0F, pktcnt);
+                framecnt = 0;
+                bytes = 0;
+                pktcnt = 0;
             }
         }
         
@@ -750,6 +814,8 @@ int main(int argc, char** argv)
     killswitch:
     
     if(f > 0 && f != stdin) fclose(f);
+    
+    if(fo) fclose(fo);
     
     if(soc) delete soc;
     

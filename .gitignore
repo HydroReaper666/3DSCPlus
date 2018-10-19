@@ -11,3 +11,11 @@
 /.project
 /.settings/
 *-stripped.elf
+/build_min/
+/assets/logo_osu.png
+/out/
+/FileStreamer/.vs/
+/FileStreamer/pkgconfig/
+/MarcusD.3DSCPlusDummy/MarcusD.3DSCPlusDummy/bin/Debug/Debug.zip
+/FileStreamer/FileStream_debug.ogg
+*.zip

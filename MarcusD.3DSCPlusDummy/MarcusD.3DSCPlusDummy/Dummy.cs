@@ -12,8 +12,8 @@ namespace MarcusD._3DSCPlusDummy
     using Event = Dummy.Keybinding.Event;
     using System.Net;
     using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Drawing;
+    using System.Runtime.InteropServices;
+    using System.Drawing;
     using System.IO;
 
     public class Dummy
@@ -24,6 +24,7 @@ using System.Drawing;
 
         public Thread t = null;
         public Boolean running = false;
+        public Boolean debug = false;
 
         public String ipaddr = "10.0.0.103";
         public UInt16 port = 6956;
@@ -39,7 +40,7 @@ using System.Drawing;
         public int mmode = 1;
 
         int speed = 1;
-        int currspeed = 1;
+        public int currspeed = 1;
 
         public Keybinding[] bindings = new Keybinding[32];
         public List<RektButton> rekts = new List<RektButton>();
@@ -55,6 +56,14 @@ using System.Drawing;
 
         //float spx = 1366 / 320.0F;
         //float spy = 768 / 240.0F;
+
+        Boolean iscal = false;
+        short[] cal = null;
+
+        float expandlerp(float to_l, float to_h, float from_l, float from_h, float from_v)
+        {
+            return ((from_v - from_l) / (from_h - from_l)) * (to_h - to_l) + to_l;
+        }
 
         public class RektButton
         {
@@ -216,6 +225,8 @@ using System.Drawing;
 
             Int16 px = 0, py = 0;
 
+            short dacx = 0, dacy = 0;
+
             while(running)
             {
                 if(imgbuf != null)
@@ -266,8 +277,8 @@ using System.Drawing;
                     obuf.Clear();
                     obuf.Add(0); //PacketID
                     obuf.Add(0); //altkey (dummy)
-                    obuf.Add(0); //padding1
-                    obuf.Add(0); //padding2
+                    obuf.Add(1); //extdata (osu!C compatible flag)
+                    obuf.Add(0); //padding
                     obuf.Add((byte)((altkey >>  0) & 0xFF)); //altkey1
                     obuf.Add((byte)((altkey >>  8) & 0xFF)); //altkey2
                     obuf.Add((byte)((altkey >> 16) & 0xFF)); //altkey3
@@ -317,6 +328,17 @@ using System.Drawing;
                     case 0: //CONNECT
                         Console.WriteLine("Pong received");
                         connected = true;
+
+                        if(cal == null)
+                        {
+                            obuf.Clear();
+                            obuf.Add(0x7D); //PacketID TouchCalEx
+                            obuf.Add(0); //altkey (dummy)
+                            obuf.Add(1); //extdata (osu!C compatible flag)
+                            obuf.Add(0); //padding
+                            Console.WriteLine("Sending ping packet");
+                            sock.SendTo(obuf.ToArray(), sockaddr_in);
+                        }
                         //TODO implement sockimg
                         continue;
                     case 1: //DISCONNECT
@@ -339,7 +361,7 @@ using System.Drawing;
                         if(Math.Abs(sx) < deadzone) sx = 0;
                         if(Math.Abs(sy) < deadzone) sy = 0;
 
-                        //Console.WriteLine("K: " + currkey.ToString("X8") + " T: " + tx.ToString("+000;-000;0000") + "x" + ty.ToString("+000;-000;0000") + " C: " + cx.ToString("+000;-000;0000") + "x" + cy.ToString("+000;-000;0000") + " S: " + sx.ToString("+000;-000;0000") + "x" + sy.ToString("+000;-000;0000"));
+                        if(debug) Console.WriteLine("[IN] K: " + currkey.ToString("X8") + " T: " + tx.ToString("+000;-000;0000") + "x" + ty.ToString("+000;-000;0000") + " C: " + cx.ToString("+000;-000;0000") + "x" + cy.ToString("+000;-000;0000") + " S: " + sx.ToString("+000;-000;0000") + "x" + sy.ToString("+000;-000;0000"));
 
                         kdown = currkey & ~kheld;
                         kup = ~currkey & kheld;
@@ -367,6 +389,7 @@ using System.Drawing;
                                     pt.Y = 0;
 
                                     NativeInput.RECT rect;
+
                                     if(hwnd == IntPtr.Zero)
                                         rect = Screen.PrimaryScreen.Bounds;
                                     else
@@ -374,8 +397,8 @@ using System.Drawing;
 
                                     pt.X = rect.Left;
                                     pt.Y = rect.Top;
-                                    pt.X = +(int)(rect.Width / 320.0F * tx);
-                                    pt.Y = +(int)(rect.Height / 240.0F * ty);
+                                    pt.X = +(int)((tx * rect.Width) / 320.0F);
+                                    pt.Y = +(int)((ty * rect.Height) / 240.0F);
 
 
                                     NativeInput.ClientToScreen(hwnd, ref pt);
@@ -422,19 +445,174 @@ using System.Drawing;
 
                         //TODO config option
 
-                        switch(mmode)
-                        {
-                            case 1:
-                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), cx * currspeed / divx, -cy * currspeed / divy, 0, 0);
-                                break;
-                            case 2:
-                                NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), sx * currspeed / divx, -sy * currspeed / divy, 0, 0);
-                                break;
-                        }
+                        if((mmode & 1) == 1) NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), cx * currspeed / divx, -cy * currspeed / divy, 0, 0);
+                        if((mmode & 2) == 2) NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), sx * currspeed / divx, -sy * currspeed / divy, 0, 0);
 
                         break;
 
                     case 3: //SCREENSHOT (unused)
+                        break;
+
+                    case 0x7D: //TouchCalEx (osu!C)
+                        if(recvret == 8)
+                        {
+                            if(iscal)
+                            {
+                                iscal = false;
+                                break;
+                            }
+                            MessageBox.Show("Failed to get CAL: " + (buf[4] | (buf[5] << 8) | (buf[6] << 16) | (buf[7] << 24)).ToString("X8"), "CAL error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            if(cal == null && !iscal)
+                            {
+                                iscal = true;
+                                //TODO: cal
+                                //imgbuf = new byte[240 * 320 * 3];
+                            }
+                            break;
+                        }
+                        if(recvret != 0x14)
+                        {
+                            MessageBox.Show("Invalid CAL response size " + recvret.ToString("X8"), "CAL error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            break;
+                        }
+
+                        if(cal == null) cal = new short[8];
+                        cal[2] = (short)(buf[ 4] | (buf[ 5] << 8));
+                        cal[3] = (short)(buf[ 6] | (buf[ 7] << 8));
+                        cal[0] = (short)(buf[ 8] | (buf[ 9] << 8));
+                        cal[1] = (short)(buf[10] | (buf[11] << 8));
+                        cal[6] = (short)(buf[12] | (buf[13] << 8));
+                        cal[7] = (short)(buf[14] | (buf[15] << 8));
+                        cal[4] = (short)(buf[16] | (buf[17] << 8));
+                        cal[5] = (short)(buf[18] | (buf[19] << 8));
+                        iscal = false;
+
+                        MessageBox.Show
+                        (
+                            "CAL:\r\n" +
+                            cal[0].ToString() + ";" + cal[1].ToString() + " --> " + cal[2].ToString() + ";" + cal[3].ToString() + "\r\n" +
+                            cal[4].ToString() + ";" + cal[5].ToString() + " --> " + cal[6].ToString() + ";" + cal[7].ToString()
+                        );
+
+                        break;
+
+                    case 0x7E: //KeyDownEx (osu!C)
+                        altcmd = buf[1];
+                        currkey = buf[4] | (buf[5] << 8) | (buf[6] << 16) | (buf[7] << 24);
+
+                        //if(debug) Console.WriteLine("[KX] K: " + currkey.ToString("X8"));
+
+                        kdown = currkey & ~kheld;
+                        kup = ~currkey & kheld;
+                        kheld = currkey | (kheld & (1 << 20));
+
+                        foreach(Keybinding k in bindings)
+                        {
+                            if(k == null) continue;
+                            if(k.nth == 20) continue;
+
+                            if((kdown & (1 << k.nth)) != 0) ProcessKDown(k);
+                            else if((kheld & (1 << k.nth)) != 0) ProcessKHeld(k);
+                            else if((kup & (1 << k.nth)) != 0) ProcessKUp(k);
+                        }
+
+                        break;
+
+                    case 0x7F: //TouchEx (osu!C)
+                        altcmd = buf[1];
+                        bool istouch = ((buf[3] & 0x80) == 0) ? false : true;
+                        short rtx = (short)(buf[4] | (buf[5] << 8));
+                        short rty = (short)(buf[6] | (buf[7] << 8));
+
+                        if(debug) Console.WriteLine("[TX] X: " + rtx.ToString("X4") + " Y: " + rty.ToString("X4"));
+
+                        if(iscal)
+                        {
+                            if(!istouch) break;
+
+                            if((kheld & 1) != 0)
+                            {
+                                cal[2] = rtx;
+                                cal[3] = rty;
+                            }
+                            if((kheld & 2) != 0)
+                            {
+                                cal[6] = rtx;
+                                cal[7] = rty;
+                            }
+
+                            break;
+                        }
+
+                        Boolean td =  istouch && ((kheld & (1 << 20)) == 0);
+                        Boolean tu = !istouch && ((kheld & (1 << 20)) != 0);
+
+                        if(istouch) //KEY_TOUCH
+                        {
+                            if(hwnd == IntPtr.Zero)
+                            {
+                                if(abs)
+                                    NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE | NativeInput.MouseEventFlags.MOVE_ABS), (int)((rtx << 4) | (rtx >> 8)), ((rty << 4) | (rty >> 8)), 0, 0);
+                                else
+                                {
+                                    short dx = (short)((rtx - dacx) / currspeed);
+                                    short dy = (short)((rty - dacy) / currspeed);
+
+                                    if(td)
+                                    {
+                                        dacx = rtx;
+                                        dacy = rty;
+                                    }
+                                    else
+                                    {
+                                        NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE), (int)(dx), (int)(dy), 0, 0);
+
+                                        if(dx != 0) dacx = rtx;
+                                        if(dy != 0) dacy = rty;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                NativeInput.POINT pt;
+                                pt.X = 0;
+                                pt.Y = 0;
+
+                                NativeInput.RECT rect;
+                                NativeInput.GetClientRect(hwnd, out rect);
+
+                                pt.X = rect.Left;
+                                pt.Y = rect.Top;
+                                pt.X += (int)((rtx * rect.Width) / 4096.0F);
+                                pt.Y += (int)((rty * rect.Height) / 4096.0F);
+
+
+                                NativeInput.ClientToScreen(hwnd, ref pt);
+                                //NativeInput.mouse_event((int)(NativeInput.MouseEventFlags.MOVE | NativeInput.MouseEventFlags.MOVE_ABS), pt.X, pt.Y, 0, 0);
+                                Cursor.Position = pt;
+                            }
+
+                            if(td)
+                                ProcessKDown(bindings[20]);
+
+                            ProcessKHeld(bindings[20]);
+                        }
+                        else if(tu) ProcessKUp(bindings[20]);
+
+                        if(istouch)
+                            kheld |=  (1 << 20);
+                        else
+                            kheld &= ~(1 << 20);
+
+                        
+
+                        break;
+
+                    case 0x80: //JavaPing
+                        sock.SendTo(new byte[] {0x80, 0, 1, 0}, sockaddr_in);
+                        break;
+
+
                     default:
                         break;
                 }
@@ -508,6 +686,7 @@ using System.Drawing;
                 case Simutype.M_MSPEED:
                     currspeed += evt.mousepos;
                     if(currspeed < speed) currspeed = speed; //no upper bound, lol
+                    Console.WriteLine("speed set to " + currspeed);
                     break;
 
             }

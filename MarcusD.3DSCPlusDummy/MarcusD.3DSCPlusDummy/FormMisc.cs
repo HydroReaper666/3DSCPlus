@@ -21,6 +21,7 @@ namespace MarcusD._3DSCPlusDummy
             InitializeComponent();
 
             checkABS.Checked = dmy.abs;
+            numMovSpd.Value = dmy.currspeed;
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
@@ -40,6 +41,16 @@ namespace MarcusD._3DSCPlusDummy
         private void btnHwndNull_Click(object sender, EventArgs e)
         {
             dmy.hwnd = IntPtr.Zero;
+        }
+
+        private void FormMisc_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void numMovSpd_ValueChanged(object sender, EventArgs e)
+        {
+            dmy.currspeed = (int)numMovSpd.Value;
         }
     }
 }

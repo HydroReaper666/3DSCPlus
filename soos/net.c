@@ -11,6 +11,7 @@ static socklen_t saddrsize = sizeof(struct sockaddr_in);
 
 int preparesock(int port)
 {
+    if(sock) closesocket(sock);
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock < 0)
     {
@@ -30,7 +31,7 @@ int preparesock(int port)
     if(ret < 0)
     {
         puts("bind()");
-        close(sock);
+        closesocket(sock);
         sock = 0;
         return errno;
     }
@@ -66,4 +67,50 @@ int sendinput(u8 altcmd, u32 key, touchPosition touch, circlePosition cpad, circ
     outbuf->input.cpad = cpad;
     outbuf->input.cstick = cstick;
     return sendbuf(offsetof(struct packet, input) + sizeof(outbuf->input));
+}
+
+int SendKeysEx(u8 seq, u32 keys)
+{
+    outbuf->hdr.cmd = 0x7E;
+    outbuf->hdr.altcmd = 0;
+    outbuf->hdr.seq = seq & 0x7F;
+    *(u32*)(((u8*)outbuf) + 4) = keys;
+    return sendbuf(8);
+}
+
+int SendTouchEx(u8 seq, s16 x, s16 y, u8 is)
+{
+    outbuf->hdr.cmd = 0x7F;
+    outbuf->hdr.altcmd = 0;
+    outbuf->hdr.seq = (seq & 0x7F) | (is ? 0x80 : 0);
+    s16* stuff = (s16*)(((u8*)outbuf) + 4);
+    *(stuff++) = x;
+    *(stuff++) = y;
+    return sendbuf(8);
+}
+
+int SendCalEx(s16* cal)
+{
+    outbuf->hdr.cmd = 0x7D;
+    outbuf->hdr.altcmd = 0;
+    outbuf->hdr.seq = 0;
+    s16* stuff = (s16*)(((u8*)outbuf) + 4);
+    *(stuff++) = cal[0];
+    *(stuff++) = cal[1];
+    *(stuff++) = cal[2];
+    *(stuff++) = cal[3];
+    *(stuff++) = cal[4];
+    *(stuff++) = cal[5];
+    *(stuff++) = cal[6];
+    *(stuff++) = cal[7];
+    return sendbuf(20);
+}
+
+int SendCalErr(Result res)
+{
+    outbuf->hdr.cmd = 0x7D;
+    outbuf->hdr.altcmd = 0;
+    outbuf->hdr.seq = 0;
+    *(Result*)(((u8*)outbuf) + 4) = res;
+    return sendbuf(8);
 }

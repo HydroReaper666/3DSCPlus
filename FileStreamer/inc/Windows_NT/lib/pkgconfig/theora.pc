@@ -1,0 +1,14 @@
+# theora installed pkg-config file
+
+prefix=/Volumes/WESTERNDIGI/dev_threedee/PaintController/FileStreamer/aaa/libtheora-1.1.1/instdir
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: theora
+Description: Theora video codec
+Version: 1.1.1
+Requires: ogg >= 1.1
+Conflicts:
+Libs: -L${libdir} -ltheora
+Cflags: -I${includedir}

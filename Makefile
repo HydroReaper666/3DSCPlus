@@ -10,63 +10,70 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 
 #---------------------------------------------------------------------------------
-# TARGET is the name of the output
-# BUILD is the directory where object files & intermediate files will be placed
-# SOURCES is a list of directories containing source code
-# DATA is a list of directories containing data files
-# INCLUDES is a list of directories containing header files
-#
-# NO_SMDH: if set to anything, no SMDH file is generated.
-# APP_TITLE is the name of the app stored in the SMDH file (Optional)
-# APP_DESCRIPTION is the description of the app stored in the SMDH file (Optional)
-# APP_AUTHOR is the author of the app stored in the SMDH file (Optional)
-# ICON is the filename of the icon (.png), relative to the project folder.
-#   If not set, it attempts to use one of the following (in this order):
-#     - <Project name>.png
-#     - icon.png
-#     - <libctru folder>/default_icon.png
-#---------------------------------------------------------------------------------
-TARGET		    :=	$(notdir $(CURDIR))
-BUILD		    :=	build
-SOURCES		    :=	soos
-DATA		    :=	data
-INCLUDES	    :=	inc
+TARGET		:= $(notdir $(TOPDIR))
+BUILD		:= build
+SOURCES		:= soos
+DATA		:= data
+INCLUDES	:= inc
+ROMFS		:= $(TOPDIR)/assets/ROMFS
+ifeq ($(strip $(OSUC)),)
 APP_TITLE       :=  3DSController+
 APP_DESCRIPTION :=  3DSController Plus
 APP_AUTHOR      :=  MarcusD
 APP_PRODUCT_CODE:=  CTR-P-AGIA
 APP_UNIQUE_ID   :=  0x56
 ICON            :=  assets/logo.png
+else
+TARGET		:=  $(notdir $(TOPDIR))_min
+BUILD		:=  build_min
+APP_TITLE       :=  osu!Controller
+APP_DESCRIPTION :=  osu!Controller
+APP_AUTHOR      :=  MarcusD
+APP_PRODUCT_CODE:=  CTR-P-AOSA
+APP_UNIQUE_ID   :=  0x57
+ICON            :=  assets/logo_osu.png
+endif
 
-APP_TITLE       :=  $(shell echo "$(APP_TITLE)" | cut -c1-128)
-APP_DESCRIPTION :=  $(shell echo "$(APP_DESCRIPTION)" | cut -c1-256)
-APP_AUTHOR      :=  $(shell echo "$(APP_AUTHOR)" | cut -c1-128)
-APP_PRODUCT_CODE:=  $(shell echo $(APP_PRODUCT_CODE) | cut -c1-16)
-APP_UNIQUE_ID   :=  $(shell echo $(APP_UNIQUE_ID) | cut -c1-7)
+APP_TITLE	:= $(shell echo "$(APP_TITLE)" | cut -c1-128)
+APP_DESCRIPTION	:= $(shell echo "$(APP_DESCRIPTION)" | cut -c1-256)
+APP_AUTHOR	:= $(shell echo "$(APP_AUTHOR)" | cut -c1-128)
+APP_PRODUCT_CODE:= $(shell echo $(APP_PRODUCT_CODE) | cut -c1-16)
+APP_UNIQUE_ID	:= $(shell echo $(APP_UNIQUE_ID) | cut -c1-7)
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard
 
-CFLAGS	:=	-g -Wall -Wno-format -O2 -mword-relocations \
-			-fomit-frame-pointer -ffast-math \
-			$(ARCH)
+CFLAGS	:=	-g -Wall -O0 -mword-relocations \
+			-ffast-math \
+			$(ARCH) \
+			-Wno-format -Wno-write-strings -Wno-unused-variable -Wno-unused-value\
+			-Wno-deprecated-declarations -Wno-pointer-arith -Wno-sign-compare\
+			-Wno-unused-but-set-variable
 
 CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -std=gnu++11
+ifneq ($(strip $(OSUC)),)
+CFLAGS	+=	-DOSUC
+endif
+
+CXXFLAGS:=	$(CFLAGS) -Wno-reorder -fno-rtti -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
+ifeq ($(strip $(OSUC)),)
 LIBS	:= -ltheoradec -logg -lctru -lm
+else
+LIBS	:= -lctru -lm
+endif
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(CTRULIB) $(DEVKITPRO)/portlibs/armv6k
+LIBDIRS	:=	$(CTRULIB) $(DEVKITPRO)/portlibs/armv6k
 
 
 #---------------------------------------------------------------------------------
@@ -76,18 +83,24 @@ LIBDIRS	:= $(CTRULIB) $(DEVKITPRO)/portlibs/armv6k
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export OUTPUT	:=	$(CURDIR)/out/$(TARGET)
+
 export TOPDIR	:=	$(CURDIR)
 
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
+export VPATH	:=	$(foreach dir,$(SOURCES) $(BUILD)/_lzz_temp,$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
-CFILES		:=  $(shell find $(SOURCES) -name '*.c' -printf "%P\n")	#$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=  $(shell find $(SOURCES) -name '*.cpp' -printf "%P\n")	#$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-SFILES		:=  $(shell find $(SOURCES) -name '*.s' -printf "%P\n")	#$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+CFILES		:=	$(shell find $(SOURCES) -name '*.c' -printf "%P\n")
+CPPFILES	:=	$(shell find $(SOURCES) -name '*.cpp' -printf "%P\n")
+LPPFILES	:=	$(shell find $(SOURCES) -name '*.lpp' -printf "%P\n")
+SFILES		:=	$(shell find $(SOURCES) -name '*.s' -printf "%P\n")
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+
+LPPSOOS		:=	$(foreach fil,$(LPPFILES),$(patsubst %.lpp,%.cpp,$(fil)))
+CPPFILES	+=	$(LPPSOOS)
+LPPTARGET	:=	$(foreach fil,$(LPPFILES),$(patsubst %.lpp,$(TOPDIR)/$(BUILD)/_lzz_temp/%.cpp,$(fil)))
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -108,8 +121,8 @@ export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)/include) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD) \
-			-I-$(CURDIR)/$(SOURCES)
+			$(foreach dir,$(SOURCES) $(BUILD)/_lzz_temp,-I$(CURDIR)/$(dir)) \
+			-I$(CURDIR)/$(BUILD)
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
 			$(foreach dir,$(INCLUDES),-L$(CURDIR)/$(dir)/lib)
@@ -127,20 +140,34 @@ else
 	export APP_ICON := $(TOPDIR)/$(ICON)
 endif
 
+
+export _3DSXFLAGS += --smdh=$(TOPDIR)/$(BUILD)/_smdh.bin
+
+ifneq ($(strip $(ROMFS)),)
+	export _3DSXFLAGS += --romfs=$(ROMFS)
+endif
+
 .PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
 
-$(BUILD):
+$(TOPDIR)/$(BUILD)/_lzz_temp/%.cpp : %.lpp
+	@mkdir -p $(shell dirname $@)
+	@echo [LZZ] $(patsubst $(TOPDIR)/$(BUILD)/_lzz_temp/%.cpp,%.lpp,$@)
+	@lzz -hx hpp -hd -sd -c -o $(shell dirname $@) $<
+
+$(BUILD): $(LPPTARGET)
 	@[ -d $@ ] || mkdir -p $@
+	@[ -d out ] || mkdir -p out
 	@find $(SOURCES) -type d -printf "%P\0" | xargs -0 -I {} mkdir -p $(BUILD)/{}
+	@[ ! -d $(BUILD)/_lzz_temp ] || find $(BUILD)/_lzz_temp -type d -printf "%P\0" | xargs -0 -I {} mkdir -p $(BUILD)/{}
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -rf $(BUILD) $(OUTPUT).elf $(TARGET)-stripped.elf $(OUTPUT).cia
+	@rm -rf $(BUILD) $(TARGET).elf out/
 
 
 #---------------------------------------------------------------------------------
@@ -152,50 +179,42 @@ DEPENDS	:=	$(OFILES:.o=.d)
 # main targets
 #---------------------------------------------------------------------------------
 .PHONY: all
-all	:	$(OUTPUT).cia #$(OUTPUT).3dsx
+ifeq ($(strip $(OSUC)),)
+all: $(OUTPUT).cia $(OUTPUT).3dsx
+else
+all: $(OUTPUT).cia
 
-$(OUTPUT).3dsx: $(OUTPUT).elf $(OUTPUT).smdh
+$(OUTPUT).3dsx: $(OUTPUT).elf $(CURDIR)/_smdh.bin
+endif
 
-$(OUTPUT).elf	:	$(OFILES)
+$(OUTPUT).elf: $(OFILES)
 
-$(TOPDIR)/assets/banner.bin: $(TOPDIR)/assets/banner.png $(TOPDIR)/assets/banner.wav
-	@bannertool makebanner -r regionfree -i $(TOPDIR)/assets/banner.png -a $(TOPDIR)/assets/banner.wav -o $(TOPDIR)/assets/banner.bin
+$(CURDIR)/_banner.bin: $(TOPDIR)/assets/banner.png $(TOPDIR)/assets/banner.wav
+	@bannertool makebanner -i $(TOPDIR)/assets/banner.png -a $(TOPDIR)/assets/banner.wav -o $(CURDIR)/_banner.bin
 
-$(TOPDIR)/assets/image.bin: $(TOPDIR)/assets/logo.png
-	@bannertool makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i $(TOPDIR)/assets/logo.png -o $(TOPDIR)/assets/image.bin
+$(CURDIR)/_smdh.bin: $(TOPDIR)/$(ICON)
+	@bannertool makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i $(TOPDIR)/$(ICON) -o $(CURDIR)/_smdh.bin
 
 
-$(OUTPUT)-stripped.elf: $(OUTPUT).elf
-	@cp $(OUTPUT).elf $(OUTPUT)-stripped.elf
-	@$(PREFIX)strip $(OUTPUT)-stripped.elf
+$(CURDIR)/_strip.elf: $(OUTPUT).elf
+	@cp $(OUTPUT).elf $(CURDIR)/_strip.elf
+	@$(PREFIX)strip $(CURDIR)/_strip.elf
 
-$(OUTPUT).cia: $(OUTPUT)-stripped.elf $(TOPDIR)/assets/banner.bin $(TOPDIR)/assets/image.bin
-	@makerom -f cia -o $(OUTPUT).cia -rsf $(TOPDIR)/assets/cia.rsf -elf $(OUTPUT)-stripped.elf -icon $(TOPDIR)/assets/image.bin -banner $(TOPDIR)/assets/banner.bin -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(APP_UNIQUE_ID)" -exefslogo -target t
+$(OUTPUT).cia: $(CURDIR)/_strip.elf $(CURDIR)/_banner.bin $(CURDIR)/_smdh.bin
+	@makerom -f cia -o $(OUTPUT).cia -rsf $(TOPDIR)/assets/cia.rsf -target t -exefslogo -elf $(CURDIR)/_strip.elf -icon $(CURDIR)/_smdh.bin -banner $(CURDIR)/_banner.bin -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(APP_UNIQUE_ID)" -DAPP_ROMFS="$(ROMFS)"
 	@echo "built ... $(notdir $@)"
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-%.bin.o	:	%.bin
+%.bin.o: %.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	
 
-# WARNING: This is not the right way to do this! TODO: Do it right!
-#---------------------------------------------------------------------------------
-%.vsh.o	:	%.vsh
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@python $(AEMSTRO)/aemstro_as.py $< ../$(notdir $<).shbin
-	@bin2s ../$(notdir $<).shbin | $(PREFIX)as -o $@
-	@echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(notdir $<).shbin | tr . _)`.h
-	@echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(notdir $<).shbin | tr . _)`.h
-	@echo "extern const u32" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(notdir $<).shbin | tr . _)`.h
-	@rm ../$(notdir $<).shbin
 
+#---------------------------------------------------------------------------------------
 -include $(DEPENDS)
-
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------
